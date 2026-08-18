@@ -1,6 +1,8 @@
 const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const chat = document.getElementById("chat");
+const sendButton = document.getElementById("send-button");
+const newChatButton = document.getElementById("new-chat");
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -10,9 +12,13 @@ form.addEventListener("submit", async (event) => {
   if (!message) return;
 
   addMessage(message, "user");
-  input.value = "";
 
-  const thinking = addMessage("Thinking...", "assistant");
+  input.value = "";
+  input.focus();
+
+  sendButton.disabled = true;
+
+  const thinking = addTypingIndicator();
 
   try {
     const response = await fetch("/api/chat", {
@@ -32,7 +38,7 @@ form.addEventListener("submit", async (event) => {
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error("Server returned invalid JSON: " + text);
+      throw new Error("Server returned invalid JSON");
     }
 
     if (!response.ok) {
@@ -47,13 +53,18 @@ form.addEventListener("submit", async (event) => {
     thinking.remove();
 
     addMessage(
-      "Error: " + error.message,
+      "Sorry, something went wrong: " + error.message,
       "assistant"
     );
 
     console.error("Chat error:", error);
+
+  } finally {
+    sendButton.disabled = false;
+    input.focus();
   }
 });
+
 
 function addMessage(text, sender) {
   const message = document.createElement("div");
@@ -70,3 +81,48 @@ function addMessage(text, sender) {
 
   return message;
 }
+
+
+function addTypingIndicator() {
+  const message = document.createElement("div");
+  message.className = "message assistant typing";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement("span");
+    dot.className = "typing-dot";
+    bubble.appendChild(dot);
+  }
+
+  message.appendChild(bubble);
+  chat.appendChild(message);
+
+  chat.scrollTop = chat.scrollHeight;
+
+  return message;
+}
+
+
+newChatButton.addEventListener("click", () => {
+  chat.innerHTML = `
+    <div class="welcome">
+      <div class="welcome-avatar">T</div>
+
+      <h2>Hello, I'm Theo 👋</h2>
+
+      <p>
+        Your personal AI assistant. Ask me anything and let's get started.
+      </p>
+    </div>
+
+    <div class="message assistant">
+      <div class="bubble">
+        What would you like to talk about?
+      </div>
+    </div>
+  `;
+
+  input.focus();
+});

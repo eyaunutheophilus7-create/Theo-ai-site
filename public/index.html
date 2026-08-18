@@ -3,23 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1020">
   <title>Theo AI</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
+
   <main class="app">
 
     <header class="header">
-      <div class="logo">Theo AI</div>
-      <p>Your AI assistant</p>
+      <div class="brand">
+        <div class="avatar">T</div>
+
+        <div class="brand-info">
+          <h1>Theo AI</h1>
+          <div class="status">
+            <span class="status-dot"></span>
+            Online
+          </div>
+        </div>
+      </div>
+
+      <button id="new-chat" class="new-chat" type="button">
+        + New Chat
+      </button>
     </header>
 
     <section id="chat" class="chat">
 
+      <div class="welcome">
+        <div class="welcome-avatar">T</div>
+
+        <h2>Hello, I'm Theo 👋</h2>
+
+        <p>
+          Your personal AI assistant. Ask me anything and let's get started.
+        </p>
+      </div>
+
       <div class="message assistant">
         <div class="bubble">
-          Hello! 👋 I'm Theo AI. How can I help you today?
+          What would you like to talk about?
         </div>
       </div>
 
@@ -27,17 +52,25 @@
 
     <form id="chat-form" class="input-area">
 
-      <input
-        id="message-input"
-        type="text"
-        placeholder="Ask Theo AI anything..."
-        autocomplete="off"
-        required
-      >
+      <div class="input-wrapper">
 
-      <button type="submit">
-        Send
-      </button>
+        <input
+          id="message-input"
+          type="text"
+          placeholder="Message Theo..."
+          autocomplete="off"
+          required
+        >
+
+        <button id="send-button" type="submit" aria-label="Send message">
+          ➤
+        </button>
+
+      </div>
+
+      <div class="input-hint">
+        Theo AI can make mistakes. Check important information.
+      </div>
 
     </form>
 
