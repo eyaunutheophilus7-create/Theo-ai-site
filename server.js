@@ -38,12 +38,24 @@ Your goal is to be a useful, trustworthy assistant that feels natural to talk to
 app.post("/api/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
+    const history = Array.isArray(req.body.history)
+      ? req.body.history
+      : [];
 
     if (!userMessage) {
       return res.status(400).json({
         error: "Message is required"
       });
     }
+
+    const safeHistory = history
+      .filter(
+        (message) =>
+          message &&
+          (message.role === "user" || message.role === "assistant") &&
+          typeof message.content === "string"
+      )
+      .slice(-20);
 
     const response = await client.chat.completions.create({
       model: "openrouter/free",
@@ -52,6 +64,7 @@ app.post("/api/chat", async (req, res) => {
           role: "system",
           content: THEO_PERSONALITY
         },
+        ...safeHistory,
         {
           role: "user",
           content: userMessage
@@ -74,8 +87,4 @@ app.post("/api/chat", async (req, res) => {
       error: "Sorry, Theo AI couldn't get a response."
     });
   }
-});
-
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Theo AI is running on port ${PORT}`);
 });

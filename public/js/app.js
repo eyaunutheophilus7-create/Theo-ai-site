@@ -4,6 +4,8 @@ const chat = document.getElementById("chat");
 const sendButton = document.getElementById("send-button");
 const newChatButton = document.getElementById("new-chat");
 
+let conversationHistory = [];
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -27,7 +29,8 @@ form.addEventListener("submit", async (event) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: message
+        message: message,
+        history: conversationHistory
       })
     });
 
@@ -48,6 +51,19 @@ form.addEventListener("submit", async (event) => {
     thinking.remove();
 
     addMessage(data.reply, "assistant");
+
+    conversationHistory.push(
+      {
+        role: "user",
+        content: message
+      },
+      {
+        role: "assistant",
+        content: data.reply
+      }
+    );
+
+    conversationHistory = conversationHistory.slice(-20);
 
   } catch (error) {
     thinking.remove();
@@ -106,6 +122,8 @@ function addTypingIndicator() {
 
 
 newChatButton.addEventListener("click", () => {
+  conversationHistory = [];
+
   chat.innerHTML = `
     <div class="welcome">
       <div class="welcome-avatar">T</div>
