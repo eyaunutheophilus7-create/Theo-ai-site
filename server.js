@@ -88,3 +88,6 @@ app.post("/api/chat", async (req, res) => {
     });
   }
 });
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Theo AI server running on port ${PORT}`);
+});
