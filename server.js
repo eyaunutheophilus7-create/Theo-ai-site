@@ -83,9 +83,9 @@ app.post("/api/chat", async (req, res) => {
   } catch (error) {
     console.error("OpenRouter error:", error);
 
-    res.status(500).json({
-      error: "Sorry, Theo AI couldn't get a response."
-    });
+res.status(500).json({
+  error: error.message || "Sorry, Theo AI couldn't get a response."
+});
   }
 });
 app.listen(PORT, "0.0.0.0", () => {
