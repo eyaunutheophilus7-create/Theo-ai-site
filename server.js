@@ -58,7 +58,7 @@ app.post("/api/chat", async (req, res) => {
       .slice(-20);
 
     const response = await client.chat.completions.create({
-      model: "nousresearch/hermes-3-llama-3.1-405b:free",
+      model: "openrouter/free",
       messages: [
         {
           role: "system",
