@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 const express = require("express");
-const OpenAI = require("openai");
 const { Pool } = require("pg");
 const crypto = require("crypto");
 
@@ -15,14 +14,7 @@ const pool = new Pool({
   }
 });
 
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://theo-ai-site.onrender.com",
-    "X-Title": "Theo AI"
-  }
-});
+const { client, MODELS } = require("./src/ai/client");
 
 app.use(express.json());
 app.use(express.static("public"));
@@ -175,7 +167,7 @@ ${userMessage}
 `;
 
     const result = await client.chat.completions.create({
-      model: "openrouter/free",
+      model: MODELS.primary,
       messages: [
         {
           role: "system",
@@ -655,7 +647,7 @@ END RECALL CONTEXT.
       .slice(-20);
 
     const response = await client.chat.completions.create({
-      model: "openrouter/free",
+      model: MODELS.primary,
       messages: [
         {
   role: "system",
