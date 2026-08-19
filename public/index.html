@@ -12,67 +12,159 @@
 
   <main class="app">
 
-    <header class="header">
-      <div class="brand">
-        <div class="avatar">T</div>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
 
-        <div class="brand-info">
-          <h1>Theo AI</h1>
-          <div class="status">
-            <span class="status-dot"></span>
-            Online
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="avatar">T</div>
+          <div>
+            <h2>Theo AI</h2>
+            <span>Conversations</span>
           </div>
         </div>
+
+        <button
+          id="close-sidebar"
+          class="close-sidebar"
+          type="button"
+          aria-label="Close sidebar"
+        >
+          ×
+        </button>
       </div>
 
-      <button id="new-chat" class="new-chat" type="button">
+      <button
+        id="sidebar-new-chat"
+        class="sidebar-new-chat"
+        type="button"
+      >
         + New Chat
       </button>
-    </header>
 
-    <section id="chat" class="chat">
-
-      <div class="welcome">
-        <div class="welcome-avatar">T</div>
-
-        <h2>Hello, I'm Theo 👋</h2>
-
-        <p>
-          Your personal AI assistant. Ask me anything and let's get started.
-        </p>
+      <div class="history-title">
+        Previous Chats
       </div>
 
-      <div class="message assistant">
-        <div class="bubble">
-          What would you like to talk about?
+      <div id="conversation-list" class="conversation-list">
+        <div class="history-empty">
+          No previous chats yet.
         </div>
       </div>
 
-    </section>
+    </aside>
 
-    <form id="chat-form" class="input-area">
+    <!-- Mobile sidebar overlay -->
+    <div
+      id="sidebar-overlay"
+      class="sidebar-overlay"
+    ></div>
 
-      <div class="input-wrapper">
+    <!-- Main chat -->
+    <section class="chat-container">
 
-        <input
-          id="message-input"
-          type="text"
-          placeholder="Message Theo..."
-          autocomplete="off"
-          required
+      <header class="header">
+
+        <div class="header-left">
+
+          <button
+            id="menu-button"
+            class="menu-button"
+            type="button"
+            aria-label="Open conversation history"
+          >
+            ☰
+          </button>
+
+          <div class="brand">
+
+            <div class="avatar">T</div>
+
+            <div class="brand-info">
+              <h1>Theo AI</h1>
+
+              <div class="status">
+                <span class="status-dot"></span>
+                Online
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <button
+          id="new-chat"
+          class="new-chat"
+          type="button"
         >
-
-        <button id="send-button" type="submit" aria-label="Send message">
-          ➤
+          + New Chat
         </button>
 
-      </div>
+      </header>
 
-      <div class="input-hint">
-        Theo AI can make mistakes. Check important information.
-      </div>
+      <section id="chat" class="chat">
 
-    </form>
+        <div class="welcome">
+
+          <div class="welcome-avatar">
+            T
+          </div>
+
+          <h2>
+            Hello, I'm Theo 👋
+          </h2>
+
+          <p>
+            Your personal AI assistant.
+            Ask me anything and let's get started.
+          </p>
+
+        </div>
+
+        <div class="message assistant">
+
+          <div class="bubble">
+            What would you like to talk about?
+          </div>
+
+        </div>
+
+      </section>
+
+      <form
+        id="chat-form"
+        class="input-area"
+      >
+
+        <div class="input-wrapper">
+
+          <input
+            id="message-input"
+            type="text"
+            placeholder="Message Theo..."
+            autocomplete="off"
+            required
+          >
+
+          <button
+            id="send-button"
+            type="submit"
+            aria-label="Send message"
+          >
+            ➤
+          </button>
+
+        </div>
+
+        <div class="input-hint">
+          Theo AI can make mistakes.
+          Check important information.
+        </div>
+
+      </form>
+
+    </section>
 
   </main>
 
