@@ -2,25 +2,16 @@ const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const chat = document.getElementById("chat");
 const sendButton = document.getElementById("send-button");
-
 const newChatButton = document.getElementById("new-chat");
-const sidebarNewChatButton =
-  document.getElementById("sidebar-new-chat");
+
+const conversationPanel =
+  document.getElementById("conversation-panel");
 
 const conversationList =
   document.getElementById("conversation-list");
 
-const sidebar =
-  document.getElementById("sidebar");
-
-const menuButton =
-  document.getElementById("menu-button");
-
-const closeSidebarButton =
-  document.getElementById("close-sidebar");
-
-const sidebarOverlay =
-  document.getElementById("sidebar-overlay");
+const closeHistoryButton =
+  document.getElementById("close-history");
 
 let conversationHistory = [];
 
@@ -32,52 +23,116 @@ let conversationId =
 
 
 /*
-  =========================
-  SIDEBAR
-  =========================
+  Create a new conversation
 */
-
-function openSidebar() {
-  sidebar.classList.add("open");
-  sidebarOverlay.classList.add("open");
-}
-
-function closeSidebar() {
-  sidebar.classList.remove("open");
-  sidebarOverlay.classList.remove("open");
-}
-
-if (menuButton) {
-  menuButton.addEventListener(
-    "click",
-    openSidebar
+async function createConversation() {
+  const response = await fetch(
+    "/api/conversations",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        userId
+      })
+    }
   );
-}
 
-if (closeSidebarButton) {
-  closeSidebarButton.addEventListener(
-    "click",
-    closeSidebar
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ||
+      "Could not create conversation"
+    );
+  }
+
+  conversationId =
+    data.conversationId;
+
+  localStorage.setItem(
+    "theo_conversation_id",
+    conversationId
   );
+
+  conversationHistory = [];
+
+  return conversationId;
 }
 
-if (sidebarOverlay) {
-  sidebarOverlay.addEventListener(
-    "click",
-    closeSidebar
+
+/*
+  Load messages from current conversation
+*/
+async function loadConversationHistory() {
+  if (!userId || !conversationId) {
+    return;
+  }
+
+  const response = await fetch(
+    `/api/messages/${encodeURIComponent(userId)}/${encodeURIComponent(conversationId)}`
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error ||
+      "Could not load conversation"
+    );
+  }
+
+  conversationHistory =
+    (data.messages || [])
+      .filter(
+        message =>
+          message.role === "user" ||
+          message.role === "assistant"
+      )
+      .map(message => ({
+        role: message.role,
+        content: message.content
+      }))
+      .slice(-20);
+
+  chat.innerHTML = "";
+
+  if (
+    conversationHistory.length === 0
+  ) {
+    showWelcome();
+    return;
+  }
+
+  conversationHistory.forEach(
+    message => {
+      addMessage(
+        message.content,
+        message.role
+      );
+    }
   );
 }
 
 
 /*
-  Load previous conversations
+  Load all previous conversations
 */
 async function loadConversations() {
-  if (!userId) return;
+  if (!userId) {
+    return;
+  }
 
   try {
+    conversationList.innerHTML = `
+      <div class="conversation-loading">
+        Loading conversations...
+      </div>
+    `;
+
     const response = await fetch(
-      `/api/conversations/${userId}`
+      `/api/conversations/${encodeURIComponent(userId)}`
     );
 
     const data = await response.json();
@@ -89,14 +144,14 @@ async function loadConversations() {
       );
     }
 
-    conversationList.innerHTML = "";
-
     const conversations =
       data.conversations || [];
 
+    conversationList.innerHTML = "";
+
     if (conversations.length === 0) {
       conversationList.innerHTML = `
-        <div class="history-empty">
+        <div class="conversation-empty">
           No previous chats yet.
         </div>
       `;
@@ -105,7 +160,7 @@ async function loadConversations() {
     }
 
     conversations.forEach(
-      (conversation) => {
+      conversation => {
 
         const button =
           document.createElement("button");
@@ -119,7 +174,9 @@ async function loadConversations() {
           conversation.id ===
           conversationId
         ) {
-          button.classList.add("active");
+          button.classList.add(
+            "active"
+          );
         }
 
         const title =
@@ -129,8 +186,10 @@ async function loadConversations() {
           "conversation-title";
 
         title.textContent =
-          conversation.title ||
-          "New Chat";
+          conversation.title &&
+          conversation.title !== "New Chat"
+            ? conversation.title
+            : "New Chat";
 
         const date =
           document.createElement("div");
@@ -140,7 +199,8 @@ async function loadConversations() {
 
         date.textContent =
           formatConversationDate(
-            conversation.updated_at
+            conversation.updated_at ||
+            conversation.created_at
           );
 
         button.appendChild(title);
@@ -170,40 +230,12 @@ async function loadConversations() {
       error
     );
 
+    conversationList.innerHTML = `
+      <div class="conversation-empty">
+        Could not load previous chats.
+      </div>
+    `;
   }
-}
-
-
-/*
-  Format conversation date
-*/
-function formatConversationDate(
-  dateString
-) {
-
-  if (!dateString) {
-    return "";
-  }
-
-  const date =
-    new Date(dateString);
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
-  }
-
-  return date.toLocaleDateString(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    }
-  );
 }
 
 
@@ -213,7 +245,6 @@ function formatConversationDate(
 async function openConversation(
   selectedConversationId
 ) {
-
   try {
 
     conversationId =
@@ -224,11 +255,13 @@ async function openConversation(
       conversationId
     );
 
+    conversationHistory = [];
+
     await loadConversationHistory();
 
-    await loadConversations();
+    closeConversationPanel();
 
-    closeSidebar();
+    await loadConversations();
 
     input.focus();
 
@@ -247,133 +280,65 @@ async function openConversation(
 
 
 /*
-  =========================
-  CREATE CONVERSATION
-  =========================
+  Format conversation date
 */
-
-async function createConversation() {
-
-  const response =
-    await fetch(
-      "/api/conversations",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          userId
-        })
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-
-    throw new Error(
-      data.error ||
-      "Could not create conversation"
-    );
-
+function formatConversationDate(
+  dateString
+) {
+  if (!dateString) {
+    return "";
   }
 
-  conversationId =
-    data.conversationId;
-
-  localStorage.setItem(
-    "theo_conversation_id",
-    conversationId
-  );
-
-  conversationHistory = [];
-
-  await loadConversations();
-}
-
-
-/*
-  =========================
-  LOAD CURRENT CHAT
-  =========================
-*/
-
-async function loadConversationHistory() {
+  const date =
+    new Date(dateString);
 
   if (
-    !userId ||
-    !conversationId
+    Number.isNaN(
+      date.getTime()
+    )
   ) {
-    return;
+    return "";
   }
 
-  const response =
-    await fetch(
-      `/api/messages/${userId}/${conversationId}`
-    );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-
-    throw new Error(
-      data.error ||
-      "Could not load conversation"
-    );
-
-  }
-
-  conversationHistory =
-    (data.messages || [])
-      .filter(
-        (message) =>
-          message.role === "user" ||
-          message.role === "assistant"
-      )
-      .map(
-        (message) => ({
-          role: message.role,
-          content: message.content
-        })
-      )
-      .slice(-20);
-
-  chat.innerHTML = "";
-
-  if (
-    conversationHistory.length === 0
-  ) {
-
-    showWelcome();
-
-    return;
-  }
-
-  conversationHistory.forEach(
-    (message) => {
-
-      addMessage(
-        message.content,
-        message.role
-      );
-
+  return date.toLocaleString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
     }
   );
 }
 
 
 /*
-  =========================
-  INITIALIZE USER
-  =========================
+  Open conversation sidebar
 */
+function openConversationPanel() {
 
+  conversationPanel.classList.add(
+    "open"
+  );
+
+  loadConversations();
+}
+
+
+/*
+  Close conversation sidebar
+*/
+function closeConversationPanel() {
+
+  conversationPanel.classList.remove(
+    "open"
+  );
+}
+
+
+/*
+  Initialize user
+*/
 async function initializeUser() {
 
   if (!userId) {
@@ -385,13 +350,11 @@ async function initializeUser() {
       "theo_user_id",
       userId
     );
-
   }
 
   if (!conversationId) {
 
     await createConversation();
-
   }
 
   await loadConversationHistory();
@@ -401,14 +364,11 @@ async function initializeUser() {
 
 
 /*
-  =========================
-  SEND MESSAGE
-  =========================
+  Send message
 */
-
 form.addEventListener(
   "submit",
-  async (event) => {
+  async event => {
 
     event.preventDefault();
 
@@ -471,7 +431,6 @@ form.addEventListener(
         throw new Error(
           "Server returned invalid JSON"
         );
-
       }
 
       if (!response.ok) {
@@ -480,7 +439,6 @@ form.addEventListener(
           data.error ||
           "Request failed"
         );
-
       }
 
       thinking.remove();
@@ -506,7 +464,8 @@ form.addEventListener(
 
       /*
         Refresh conversation list
-        so the latest chat appears.
+        so the latest chat appears
+        at the top.
       */
       await loadConversations();
 
@@ -527,78 +486,68 @@ form.addEventListener(
 
     } finally {
 
-      sendButton.disabled = false;
+      sendButton.disabled =
+        false;
 
       input.focus();
-
     }
-
   }
 );
 
 
 /*
-  =========================
-  NEW CHAT
-  =========================
+  New Chat button
 */
+newChatButton.addEventListener(
+  "click",
+  async () => {
 
-async function startNewChat() {
+    try {
 
-  try {
+      await createConversation();
 
-    await createConversation();
+      showWelcome();
 
-    showWelcome();
+      await loadConversations();
 
-    await loadConversations();
+      /*
+        Open history so the user
+        can immediately see previous chats.
+      */
+      openConversationPanel();
 
-    closeSidebar();
+      input.focus();
 
-    input.focus();
+    } catch (error) {
 
-  } catch (error) {
+      console.error(
+        "New chat error:",
+        error
+      );
 
-    console.error(
-      "New chat error:",
-      error
-    );
-
-    alert(
-      "Could not start a new conversation."
-    );
-
+      alert(
+        "Could not start a new conversation."
+      );
+    }
   }
-
-}
-
-
-if (newChatButton) {
-
-  newChatButton.addEventListener(
-    "click",
-    startNewChat
-  );
-
-}
-
-
-if (sidebarNewChatButton) {
-
-  sidebarNewChatButton.addEventListener(
-    "click",
-    startNewChat
-  );
-
-}
+);
 
 
 /*
-  =========================
-  WELCOME
-  =========================
+  Close sidebar
 */
+closeHistoryButton.addEventListener(
+  "click",
+  () => {
+    closeConversationPanel();
+    input.focus();
+  }
+);
 
+
+/*
+  Show welcome screen
+*/
 function showWelcome() {
 
   chat.innerHTML = `
@@ -627,16 +576,12 @@ function showWelcome() {
 
     </div>
   `;
-
 }
 
 
 /*
-  =========================
-  ADD MESSAGE
-  =========================
+  Add chat message
 */
-
 function addMessage(
   text,
   sender
@@ -673,11 +618,8 @@ function addMessage(
 
 
 /*
-  =========================
-  TYPING INDICATOR
-  =========================
+  Typing indicator
 */
-
 function addTypingIndicator() {
 
   const message =
@@ -707,7 +649,6 @@ function addTypingIndicator() {
     bubble.appendChild(
       dot
     );
-
   }
 
   message.appendChild(
@@ -726,18 +667,14 @@ function addTypingIndicator() {
 
 
 /*
-  =========================
-  START THE APP
-  =========================
+  Start Theo
 */
-
 initializeUser().catch(
-  (error) => {
+  error => {
 
     console.error(
       "Initialization error:",
       error
     );
-
   }
 );
