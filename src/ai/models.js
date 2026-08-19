@@ -1,5 +1,5 @@
 const MODELS = {
-  primary: "openrouter/free"
+  primary: "z-ai/glm-5.2:free"
 };
 
 module.exports = {
