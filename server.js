@@ -80,6 +80,16 @@ async function initializeDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_messages_conversation
       ON messages(conversation_id);
+      CREATE TABLE IF NOT EXISTS memories (
+      id BIGSERIAL PRIMARY KEY,
+      user_id VARCHAR(100) NOT NULL,
+      memory TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_memories_user
+      ON memories(user_id);
   `);
 
   console.log("Recall database tables ready");
@@ -95,6 +105,136 @@ initializeDatabase()
 
 function createId() {
   return crypto.randomUUID();
+}
+
+async function saveMemoryIfUseful(userId, userMessage) {
+  try {
+    const existingMemoriesResult = await pool.query(
+      `
+      SELECT memory
+      FROM memories
+      WHERE user_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 50
+      `,
+      [userId]
+    );
+
+    const existingMemories =
+      existingMemoriesResult.rows
+        .map((row) => `- ${row.memory}`)
+        .join("\n");
+
+    const memoryPrompt = `
+You are Theo AI's memory manager.
+
+Your job is to decide whether the user's latest message contains
+a useful long-term fact about THE USER.
+
+IMPORTANT:
+- The user is NOT Theo.
+- Theo is the AI assistant.
+- Never describe the user as Theo.
+- Always describe memories as facts about the user.
+
+Useful memories include:
+- The user's name or preferred name
+- Personal preferences
+- Favorite things
+- Long-term projects
+- Long-term goals
+- Stable interests
+- Useful personal instructions
+
+Do NOT save:
+- Passwords
+- API keys
+- Private keys
+- Wallet seed phrases
+- Financial credentials
+- Temporary requests
+- One-time information
+- Sensitive personal information
+
+Existing memories:
+
+${existingMemories || "No memories yet."}
+
+If the latest message contains a NEW useful fact that is not
+already represented by an existing memory, return ONE short sentence
+describing the fact about the user.
+
+If it is already represented by an existing memory, return:
+NONE
+
+If there is nothing useful to remember, return:
+NONE
+
+User's latest message:
+${userMessage}
+`;
+
+    const result = await client.chat.completions.create({
+      model: "openrouter/free",
+      messages: [
+        {
+          role: "system",
+          content: memoryPrompt
+        }
+      ]
+    });
+
+    const memory =
+      result.choices?.[0]?.message?.content?.trim();
+
+    if (
+      !memory ||
+      memory.toUpperCase() === "NONE" ||
+      memory.length < 3 ||
+      memory.length > 500
+    ) {
+      return;
+    }
+
+    const existingMemory = await pool.query(
+      `
+      SELECT id
+      FROM memories
+      WHERE user_id = $1
+        AND LOWER(memory) = LOWER($2)
+      LIMIT 1
+      `,
+      [userId, memory]
+    );
+
+    if (existingMemory.rows.length > 0) {
+      console.log(
+        "Duplicate memory skipped:",
+        memory
+      );
+      return;
+    }
+
+    await pool.query(
+      `
+      INSERT INTO memories
+      (user_id, memory)
+      VALUES ($1, $2)
+      `,
+      [userId, memory]
+    );
+
+    console.log(
+      "Long-term memory saved:",
+      memory
+    );
+
+  } catch (error) {
+    console.error(
+      "Automatic memory error:",
+      error
+    );
+  }
 }
 
 /*
@@ -184,6 +324,85 @@ app.post("/api/messages", async (req, res) => {
 
     res.status(500).json({
       error: "Could not save message"
+    });
+  }
+});
+/*
+  Save a long-term memory
+*/
+app.post("/api/memories", async (req, res) => {
+  try {
+    const {
+      userId,
+      memory
+    } = req.body;
+
+    if (!userId || !memory) {
+      return res.status(400).json({
+        error: "User ID and memory are required"
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO memories
+      (user_id, memory)
+      VALUES ($1, $2)
+      `,
+      [
+        String(userId).trim(),
+        String(memory).trim()
+      ]
+    );
+
+    res.json({
+      success: true
+    });
+
+  } catch (error) {
+    console.error("Save memory error:", error);
+
+    res.status(500).json({
+      error: "Could not save memory"
+    });
+  }
+});
+
+/*
+  Get long-term memories
+*/
+app.get("/api/memories/:userId", async (req, res) => {
+  try {
+    const userId = String(
+      req.params.userId || ""
+    ).trim();
+
+    if (!userId) {
+      return res.status(400).json({
+        error: "User ID is required"
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id, memory, created_at, updated_at
+      FROM memories
+      WHERE user_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 100
+      `,
+      [userId]
+    );
+
+    res.json({
+      memories: result.rows
+    });
+
+  } catch (error) {
+    console.error("Get memories error:", error);
+
+    res.status(500).json({
+      error: "Could not load memories"
     });
   }
 });
@@ -345,6 +564,14 @@ app.post("/api/chat", async (req, res) => {
     );
 
     /*
+      Automatically extract useful long-term memories
+    */
+    await saveMemoryIfUseful(
+      userId,
+      userMessage
+    );
+
+    /*
       Detect whether the user is asking Theo to recall something.
     */
     const recallRequest =
@@ -352,6 +579,34 @@ app.post("/api/chat", async (req, res) => {
         .test(userMessage);
 
     let recallContext = "";
+
+    /*
+      Load long-term memories
+    */
+    let memoryContext = "";
+
+    const memoryResult = await pool.query(
+      `
+      SELECT memory
+      FROM memories
+      WHERE user_id = $1
+      ORDER BY updated_at DESC
+      LIMIT 20
+      `,
+      [userId]
+    );
+
+    if (memoryResult.rows.length > 0) {
+      memoryContext = `
+LONG-TERM MEMORY ABOUT THE USER:
+
+${memoryResult.rows
+  .map((row) => `- ${row.memory}`)
+  .join("\n")}
+
+END LONG-TERM MEMORY.
+`;
+    }
 
     if (recallRequest) {
       const recallResult = await pool.query(
@@ -403,12 +658,14 @@ END RECALL CONTEXT.
       model: "openrouter/free",
       messages: [
         {
-          role: "system",
-          content:
-            THEO_PERSONALITY +
-            "\n\n" +
-            recallContext
-        },
+  role: "system",
+  content:
+    THEO_PERSONALITY +
+    "\n\n" +
+    memoryContext +
+    "\n\n" +
+    recallContext
+},
         ...safeHistory,
         {
           role: "user",
