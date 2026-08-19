@@ -5,7 +5,3 @@ const MODELS = {
 module.exports = {
   MODELS
 };
-
-module.exports = {
-  MODELS
-};
