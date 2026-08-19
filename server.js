@@ -17,8 +17,9 @@ pool.query("SELECT NOW()")
     console.log("PostgreSQL database connected");
   })
   .catch((error) => {
-    console.error("PostgreSQL connection error:", error.message);
-  });
+console.error("PostgreSQL connection error:", error);
+});
+
 const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
