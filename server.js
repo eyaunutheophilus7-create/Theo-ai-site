@@ -167,14 +167,18 @@ ${userMessage}
 `;
 
     const result = await client.chat.completions.create({
-      model: MODELS.primary,
-      messages: [
-        {
-          role: "system",
-          content: memoryPrompt
-        }
-      ]
-    });
+  model: MODELS.primary,
+  messages: [
+    {
+      role: "system",
+      content: memoryPrompt
+    },
+    {
+      role: "user",
+      content: "Analyze the user's latest message and decide whether it contains a useful long-term memory."
+    }
+  ]
+});
 
     const memory =
       result.choices?.[0]?.message?.content?.trim();
