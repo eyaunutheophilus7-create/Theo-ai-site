@@ -1,5 +1,5 @@
 const MODELS = {
-  primary: "gemini-2.5-flash"
+  primary: "gemini-3.6-flash"
 };
 
 module.exports = {
