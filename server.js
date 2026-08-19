@@ -568,11 +568,12 @@ app.post("/api/chat", async (req, res) => {
     );
 
     /*
-      Detect whether the user is asking Theo to recall something.
-    */
-    const recallRequest =
-      /\b(recall|remember|previous|earlier|before|last chat|last conversation|old conversation|what did we talk about|we talked about|you remember)\b/i
-        .test(userMessage);
+  Detect whether the user may need information
+  from a previous conversation.
+*/
+const recallRequest =
+  /\b(recall|remember|remembered|previous|earlier|before|last|old|past|history|conversation|chat|talked|discussed|mentioned|told|said|project|what did|where did|how did|when did|you know|you remember|we discussed|we talked)\b/i
+    .test(userMessage);
 
     let recallContext = "";
 
