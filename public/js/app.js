@@ -6,6 +6,99 @@ const newChatButton = document.getElementById("new-chat");
 
 let conversationHistory = [];
 
+let userId = localStorage.getItem("theo_user_id");
+let conversationId = localStorage.getItem("theo_conversation_id");
+
+async function createConversation() {
+  const response = await fetch("/api/conversations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      userId
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Could not create conversation"
+    );
+  }
+
+  conversationId = data.conversationId;
+
+  localStorage.setItem(
+    "theo_conversation_id",
+    conversationId
+  );
+
+  conversationHistory = [];
+}
+
+async function loadConversationHistory() {
+  if (!userId || !conversationId) {
+    return;
+  }
+
+  const response = await fetch(
+    `/api/messages/${userId}/${conversationId}`
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Could not load conversation"
+    );
+  }
+
+  conversationHistory = data.messages
+    .filter(
+      (message) =>
+        message.role === "user" ||
+        message.role === "assistant"
+    )
+    .map((message) => ({
+      role: message.role,
+      content: message.content
+    }))
+    .slice(-20);
+
+  chat.innerHTML = "";
+
+  if (conversationHistory.length === 0) {
+    showWelcome();
+    return;
+  }
+
+  conversationHistory.forEach((message) => {
+    addMessage(
+      message.content,
+      message.role
+    );
+  });
+}
+
+async function initializeUser() {
+  if (!userId) {
+    userId = crypto.randomUUID();
+
+    localStorage.setItem(
+      "theo_user_id",
+      userId
+    );
+  }
+
+  if (!conversationId) {
+    await createConversation();
+  }
+
+  await loadConversationHistory();
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -25,12 +118,16 @@ form.addEventListener("submit", async (event) => {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify({
-        message: message,
-        history: conversationHistory
+        message,
+        history: conversationHistory,
+        userId,
+        conversationId
       })
     });
 
@@ -41,11 +138,15 @@ form.addEventListener("submit", async (event) => {
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error("Server returned invalid JSON");
+      throw new Error(
+        "Server returned invalid JSON"
+      );
     }
 
     if (!response.ok) {
-      throw new Error(data.error || "Request failed");
+      throw new Error(
+        data.error || "Request failed"
+      );
     }
 
     thinking.remove();
@@ -63,17 +164,22 @@ form.addEventListener("submit", async (event) => {
       }
     );
 
-    conversationHistory = conversationHistory.slice(-20);
+    conversationHistory =
+      conversationHistory.slice(-20);
 
   } catch (error) {
     thinking.remove();
 
     addMessage(
-      "Sorry, something went wrong: " + error.message,
+      "Sorry, something went wrong: " +
+        error.message,
       "assistant"
     );
 
-    console.error("Chat error:", error);
+    console.error(
+      "Chat error:",
+      error
+    );
 
   } finally {
     sendButton.disabled = false;
@@ -81,49 +187,30 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+newChatButton.addEventListener(
+  "click",
+  async () => {
+    try {
+      await createConversation();
 
-function addMessage(text, sender) {
-  const message = document.createElement("div");
-  message.className = `message ${sender}`;
+      showWelcome();
 
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = text;
+      input.focus();
 
-  message.appendChild(bubble);
-  chat.appendChild(message);
+    } catch (error) {
+      console.error(
+        "New chat error:",
+        error
+      );
 
-  chat.scrollTop = chat.scrollHeight;
-
-  return message;
-}
-
-
-function addTypingIndicator() {
-  const message = document.createElement("div");
-  message.className = "message assistant typing";
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-
-  for (let i = 0; i < 3; i++) {
-    const dot = document.createElement("span");
-    dot.className = "typing-dot";
-    bubble.appendChild(dot);
+      alert(
+        "Could not start a new conversation."
+      );
+    }
   }
+);
 
-  message.appendChild(bubble);
-  chat.appendChild(message);
-
-  chat.scrollTop = chat.scrollHeight;
-
-  return message;
-}
-
-
-newChatButton.addEventListener("click", () => {
-  conversationHistory = [];
-
+function showWelcome() {
   chat.innerHTML = `
     <div class="welcome">
       <div class="welcome-avatar">T</div>
@@ -141,6 +228,67 @@ newChatButton.addEventListener("click", () => {
       </div>
     </div>
   `;
+}
 
-  input.focus();
+function addMessage(text, sender) {
+  const message =
+    document.createElement("div");
+
+  message.className =
+    `message ${sender}`;
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className = "bubble";
+
+  bubble.textContent = text;
+
+  message.appendChild(bubble);
+
+  chat.appendChild(message);
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+  return message;
+}
+
+function addTypingIndicator() {
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message assistant typing";
+
+  const bubble =
+    document.createElement("div");
+
+  bubble.className = "bubble";
+
+  for (let i = 0; i < 3; i++) {
+    const dot =
+      document.createElement("span");
+
+    dot.className =
+      "typing-dot";
+
+    bubble.appendChild(dot);
+  }
+
+  message.appendChild(bubble);
+
+  chat.appendChild(message);
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+  return message;
+}
+
+initializeUser().catch((error) => {
+  console.error(
+    "Initialization error:",
+    error
+  );
 });
