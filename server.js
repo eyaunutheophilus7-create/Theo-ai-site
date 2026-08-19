@@ -6,6 +6,13 @@ const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+console.log(
+  "DATABASE_URL status:",
+  process.env.DATABASE_URL
+    ? "PRESENT"
+    : "MISSING"
+);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
