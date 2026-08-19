@@ -2,10 +2,23 @@ require("dotenv").config();
 
 const express = require("express");
 const OpenAI = require("openai");
+const { Pool } = require("pg");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+pool.query("SELECT NOW()")
+  .then(() => {
+    console.log("PostgreSQL database connected");
+  })
+  .catch((error) => {
+    console.error("PostgreSQL connection error:", error.message);
+  });
 const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
