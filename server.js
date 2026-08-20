@@ -1,10 +1,13 @@
 require("dotenv").config();
 
 const express = require("express");
+const http = require("http");
+const { WebSocketServer, WebSocket } = require("ws");
 const { Pool } = require("pg");
 const crypto = require("crypto");
 
 const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 const pool = new Pool({
@@ -819,7 +822,198 @@ END RECALL CONTEXT.
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+
+/*
+ * THEO_LIVE_SERVER_V1
+ * Gemini Live voice server.
+ * GEMINI_API_KEY remains server-side.
+ */
+
+const liveWss = new WebSocketServer({
+  noServer: true
+});
+
+const LIVE_MODELS = [
+  "gemini-2.5-flash-native-audio-latest",
+  "gemini-3.1-flash-live-preview"
+];
+
+liveWss.on("connection", async (browserSocket) => {
+  let geminiSession = null;
+  let isClosed = false;
+
+  const sendBrowser = (payload) => {
+    if (browserSocket.readyState === WebSocket.OPEN) {
+      browserSocket.send(JSON.stringify(payload));
+    }
+  };
+
+  try {
+    const { GoogleGenAI, Modality } = require("@google/genai");
+
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY
+    });
+
+    let lastError = null;
+
+    for (const model of LIVE_MODELS) {
+      try {
+        console.log(`Theo Live trying model: ${model}`);
+
+        geminiSession = await ai.live.connect({
+          model,
+          config: {
+            responseModalities: [Modality.AUDIO]
+          },
+          callbacks: {
+            onopen: () => {
+              console.log(`Theo Live connected: ${model}`);
+
+              sendBrowser({
+                type: "live_connected",
+                model
+              });
+            },
+
+            onmessage: (message) => {
+              sendBrowser({
+                type: "live_message",
+                data: message
+              });
+            },
+
+            onerror: (error) => {
+              console.error(
+                "Theo Live error:",
+                error?.message || error
+              );
+
+              sendBrowser({
+                type: "live_error",
+                error:
+                  error?.message ||
+                  "Live connection error"
+              });
+            },
+
+            onclose: () => {
+              console.log(`Theo Live closed: ${model}`);
+
+              if (!isClosed) {
+                sendBrowser({
+                  type: "live_closed"
+                });
+              }
+            }
+          }
+        });
+
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+
+        console.error(
+          `Theo Live model failed: ${model}`,
+          error?.message || error
+        );
+      }
+    }
+
+    if (!geminiSession) {
+      throw (
+        lastError ||
+        new Error("All Live models failed")
+      );
+    }
+
+    browserSocket.on("message", (raw) => {
+      if (!geminiSession) return;
+
+      try {
+        const message = JSON.parse(raw.toString());
+
+        if (message.type === "client_content") {
+          geminiSession.sendClientContent(message.data);
+          return;
+        }
+
+        if (message.type === "realtime_input") {
+          geminiSession.sendRealtimeInput(message.data);
+          return;
+        }
+
+        if (message.type === "audio_stream_end") {
+          geminiSession.sendRealtimeInput({
+            audioStreamEnd: true
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Theo Live browser message error:",
+          error?.message || error
+        );
+      }
+    });
+
+    browserSocket.on("close", () => {
+      isClosed = true;
+
+      try {
+        geminiSession?.close();
+      } catch (_) {}
+
+      console.log(
+        "Theo Live browser connection closed"
+      );
+    });
+
+  } catch (error) {
+    console.error(
+      "Theo Live startup error:",
+      error?.message || error
+    );
+
+    sendBrowser({
+      type: "live_error",
+      error:
+        error?.message ||
+        "Unable to start Live voice"
+    });
+
+    try {
+      browserSocket.close();
+    } catch (_) {}
+  }
+});
+
+httpServer.on("upgrade", (request, socket, head) => {
+  if (request.url !== "/api/live") {
+    socket.destroy();
+    return;
+  }
+
+  liveWss.handleUpgrade(
+    request,
+    socket,
+    head,
+    (ws) => {
+      liveWss.emit(
+        "connection",
+        ws,
+        request
+      );
+    }
+  );
+});
+
+console.log(
+  "Theo Live server ready at /api/live"
+);
+
+
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(
     `Theo AI server running on port ${PORT}`
   );

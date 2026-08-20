@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/eyaunutheophilus7-create/Theo-ai-site#readme",
   "dependencies": {
+    "@google/genai": "^2.18.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "openai": "^7.5.0",

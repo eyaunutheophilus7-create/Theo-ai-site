@@ -1630,3 +1630,469 @@ initializeUser().catch(
     );
   }
 );
+
+
+/* THEO_LIVE_VOICE_V1 */
+
+(() => {
+  const startButton =
+    document.getElementById("voice-start-button");
+
+  const stopButton =
+    document.getElementById("voice-stop-button");
+
+  const status =
+    document.getElementById("voice-status");
+
+  if (!startButton || !stopButton || !status) {
+    console.warn(
+      "Theo Live voice UI not found."
+    );
+    return;
+  }
+
+  let socket = null;
+  let microphoneStream = null;
+  let audioContext = null;
+  let processor = null;
+  let source = null;
+
+  let playbackContext = null;
+  let nextPlaybackTime = 0;
+
+  const setStatus = (message) => {
+    status.textContent = message;
+  };
+
+  const floatTo16BitPCM = (float32) => {
+    const buffer =
+      new ArrayBuffer(float32.length * 2);
+
+    const view =
+      new DataView(buffer);
+
+    for (let i = 0; i < float32.length; i++) {
+      const sample =
+        Math.max(-1, Math.min(1, float32[i]));
+
+      view.setInt16(
+        i * 2,
+        sample < 0
+          ? sample * 0x8000
+          : sample * 0x7fff,
+        true
+      );
+    }
+
+    return new Uint8Array(buffer);
+  };
+
+  const arrayBufferToBase64 = (buffer) => {
+    let binary = "";
+
+    const bytes =
+      new Uint8Array(buffer);
+
+    const chunkSize = 0x8000;
+
+    for (
+      let i = 0;
+      i < bytes.length;
+      i += chunkSize
+    ) {
+      binary += String.fromCharCode(
+        ...bytes.subarray(
+          i,
+          Math.min(
+            i + chunkSize,
+            bytes.length
+          )
+        )
+      );
+    }
+
+    return btoa(binary);
+  };
+
+  const base64ToArrayBuffer = (base64) => {
+    const binary =
+      atob(base64);
+
+    const buffer =
+      new ArrayBuffer(binary.length);
+
+    const bytes =
+      new Uint8Array(buffer);
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] =
+        binary.charCodeAt(i);
+    }
+
+    return buffer;
+  };
+
+  const playPCM24k = (base64) => {
+    try {
+      if (!playbackContext) {
+        playbackContext =
+          new AudioContext({
+            sampleRate: 24000
+          });
+      }
+
+      const bytes =
+        new Int16Array(
+          base64ToArrayBuffer(base64)
+        );
+
+      const audioBuffer =
+        playbackContext.createBuffer(
+          1,
+          bytes.length,
+          24000
+        );
+
+      const channel =
+        audioBuffer.getChannelData(0);
+
+      for (let i = 0; i < bytes.length; i++) {
+        channel[i] =
+          bytes[i] / 32768;
+      }
+
+      const node =
+        playbackContext.createBufferSource();
+
+      node.buffer = audioBuffer;
+      node.connect(
+        playbackContext.destination
+      );
+
+      const startTime =
+        Math.max(
+          playbackContext.currentTime,
+          nextPlaybackTime
+        );
+
+      node.start(startTime);
+
+      nextPlaybackTime =
+        startTime +
+        audioBuffer.duration;
+
+    } catch (error) {
+      console.error(
+        "Theo Live playback error:",
+        error
+      );
+    }
+  };
+
+  const handleLiveMessage = (payload) => {
+    const message =
+      payload?.data || payload;
+
+    const serverContent =
+      message?.serverContent;
+
+    if (!serverContent) {
+      return;
+    }
+
+    const parts =
+      serverContent.modelTurn?.parts || [];
+
+    for (const part of parts) {
+      const inlineData =
+        part?.inlineData;
+
+      if (
+        inlineData?.mimeType?.startsWith(
+          "audio/"
+        ) &&
+        inlineData?.data
+      ) {
+        playPCM24k(
+          inlineData.data
+        );
+      }
+    }
+
+    if (
+      serverContent.turnComplete
+    ) {
+      setStatus(
+        "🟢 Theo is listening..."
+      );
+    }
+  };
+
+  const stopMicrophone = () => {
+    if (processor) {
+      processor.disconnect();
+      processor.onaudioprocess = null;
+      processor = null;
+    }
+
+    if (source) {
+      source.disconnect();
+      source = null;
+    }
+
+    if (microphoneStream) {
+      microphoneStream
+        .getTracks()
+        .forEach(track => track.stop());
+
+      microphoneStream = null;
+    }
+
+    if (audioContext) {
+      audioContext.close().catch(() => {});
+      audioContext = null;
+    }
+  };
+
+  const stopLive = () => {
+    stopMicrophone();
+
+    if (socket) {
+      try {
+        socket.close();
+      } catch (_) {}
+
+      socket = null;
+    }
+
+    startButton.hidden = false;
+    stopButton.hidden = true;
+
+    setStatus(
+      "🔴 Voice chat is off"
+    );
+  };
+
+  startButton.addEventListener(
+    "click",
+    async () => {
+      try {
+        if (socket) {
+          return;
+        }
+
+        if (
+          !navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia
+        ) {
+          throw new Error(
+            "Microphone access is not supported by this browser."
+          );
+        }
+
+        setStatus(
+          "🟡 Connecting to Theo..."
+        );
+
+        const protocol =
+          location.protocol === "https:"
+            ? "wss:"
+            : "ws:";
+
+        socket =
+          new WebSocket(
+            `${protocol}//${location.host}/api/live`
+          );
+
+        socket.onopen = async () => {
+          setStatus(
+            "🟡 Starting microphone..."
+          );
+
+          microphoneStream =
+            await navigator.mediaDevices
+              .getUserMedia({
+                audio: {
+                  channelCount: 1,
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true
+                }
+              });
+
+          audioContext =
+            new AudioContext();
+
+          await audioContext.resume();
+
+          source =
+            audioContext.createMediaStreamSource(
+              microphoneStream
+            );
+
+          processor =
+            audioContext.createScriptProcessor(
+              4096,
+              1,
+              1
+            );
+
+          processor.onaudioprocess =
+            (event) => {
+              if (
+                !socket ||
+                socket.readyState !==
+                  WebSocket.OPEN
+              ) {
+                return;
+              }
+
+              const inputData =
+                event.inputBuffer
+                  .getChannelData(0);
+
+              const pcm =
+                floatTo16BitPCM(
+                  inputData
+                );
+
+              socket.send(
+                JSON.stringify({
+                  type:
+                    "realtime_input",
+                  data: {
+                    audio: {
+                      data:
+                        arrayBufferToBase64(
+                          pcm
+                        ),
+                      mimeType:
+                        "audio/pcm;rate=16000"
+                    }
+                  }
+                })
+              );
+            };
+
+          source.connect(processor);
+
+          processor.connect(
+            audioContext.destination
+          );
+
+          startButton.hidden = true;
+          stopButton.hidden = false;
+
+          setStatus(
+            "🟢 Talk to Theo..."
+          );
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const payload =
+              JSON.parse(event.data);
+
+            if (
+              payload.type ===
+              "live_connected"
+            ) {
+              setStatus(
+                "🟢 Theo is listening..."
+              );
+              return;
+            }
+
+            if (
+              payload.type ===
+              "live_message"
+            ) {
+              handleLiveMessage(
+                payload
+              );
+              return;
+            }
+
+            if (
+              payload.type ===
+              "live_error"
+            ) {
+              console.error(
+                "Theo Live:",
+                payload.error
+              );
+
+              setStatus(
+                "🔴 Live voice error"
+              );
+
+              stopLive();
+              return;
+            }
+
+            if (
+              payload.type ===
+              "live_closed"
+            ) {
+              stopLive();
+            }
+
+          } catch (error) {
+            console.error(
+              "Theo Live message parsing error:",
+              error
+            );
+          }
+        };
+
+        socket.onerror = (error) => {
+          console.error(
+            "Theo Live WebSocket error:",
+            error
+          );
+
+          setStatus(
+            "🔴 Voice connection error"
+          );
+        };
+
+        socket.onclose = () => {
+          stopMicrophone();
+
+          socket = null;
+
+          startButton.hidden = false;
+          stopButton.hidden = true;
+
+          if (
+            status.textContent.includes(
+              "🟢"
+            )
+          ) {
+            setStatus(
+              "🔴 Voice chat is off"
+            );
+          }
+        };
+
+      } catch (error) {
+        console.error(
+          "Theo Live start error:",
+          error
+        );
+
+        stopLive();
+
+        setStatus(
+          `🔴 ${error.message}`
+        );
+      }
+    }
+  );
+
+  stopButton.addEventListener(
+    "click",
+    stopLive
+  );
+})();
+
