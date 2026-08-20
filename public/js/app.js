@@ -1607,7 +1607,10 @@ async function initializeUser() {
     await createConversation();
   }
 
-  await loadConversationHistory();
+  // Always start on the main Theo screen after a refresh.
+  // Previous conversations remain available in History.
+  conversationHistory = [];
+  showWelcome();
 
   await loadConversations();
 }
