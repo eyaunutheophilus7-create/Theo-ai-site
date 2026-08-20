@@ -396,15 +396,17 @@ async function startNewChat() {
   try {
     await createConversation();
 
+    conversationHistory = [];
+    chat.innerHTML = "";
+
     showWelcome();
 
     conversationSearch.value = "";
+    input.value = "";
 
     await loadConversations();
 
     closeHistory();
-
-    input.value = "";
 
     input.focus();
 
