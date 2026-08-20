@@ -189,43 +189,35 @@
           id="send-button"
           type="submit"
           aria-label="Send message"
+          title="Send message"
         >
-          ➤
+          ↑
         </button>
 
       </div>
 
     </form>
+        <button
+          id="voice-start-button"
+          type="button"
+          class="voice-compact-button"
+          aria-label="Start voice conversation"
+          title="Talk to Theo"
+        >
+          <span class="voice-symbol" aria-hidden="true">◉)))</span>
+        </button>
 
-  
-<!-- Theo Live Voice Chat -->
-<section id="voice-chat" class="voice-chat">
-  <div class="voice-chat-header">
-    <h2>🎙️ Talk to Theo</h2>
-    <p>Have a live voice conversation with Theo.</p>
-  </div>
+        <button
+          id="voice-stop-button"
+          type="button"
+          class="voice-compact-button voice-stop-compact"
+          aria-label="End voice conversation"
+          title="End voice conversation"
+          hidden
+        >
+          <span class="voice-symbol" aria-hidden="true">◉</span>
+        </button>
 
-  <div id="voice-status" class="voice-status">
-    🔴 Voice chat is off
-  </div>
-
-  <button
-    id="voice-start-button"
-    type="button"
-    class="voice-start-button"
-  >
-    🎙️ Start talking
-  </button>
-
-  <button
-    id="voice-stop-button"
-    type="button"
-    class="voice-stop-button"
-    hidden
-  >
-    🔴 End conversation
-  </button>
-</section>
 
 </main>
 
