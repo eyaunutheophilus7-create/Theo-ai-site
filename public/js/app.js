@@ -2,37 +2,126 @@ const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
 const chat = document.getElementById("chat");
 const sendButton = document.getElementById("send-button");
-const newChatButton = document.getElementById("new-chat");
 
-const conversationPanel =
-  document.getElementById("conversation-panel");
+const historySidebar = document.getElementById("history-sidebar");
+const historyOverlay = document.getElementById("history-overlay");
+const openHistoryButton = document.getElementById("open-history");
+const closeHistoryButton = document.getElementById("close-history");
+const historyNewChatButton = document.getElementById("history-new-chat");
+const conversationSearch = document.getElementById("conversation-search");
+const conversationList = document.getElementById("conversation-list");
 
-const conversationList =
-  document.getElementById("conversation-list");
-
-const closeHistoryButton =
-  document.getElementById("close-history");
+const themeToggle = document.getElementById("theme-toggle");
+const themeIcon = document.getElementById("theme-icon");
+const themeText = document.getElementById("theme-text");
 
 let conversationHistory = [];
+let conversations = [];
 
-let userId =
-  localStorage.getItem("theo_user_id");
+let userId = localStorage.getItem("theo_user_id");
+let conversationId = localStorage.getItem("theo_conversation_id");
 
-let conversationId =
-  localStorage.getItem("theo_conversation_id");
+let lastUserMessage = "";
 
 
-/*
-  Create a new conversation
-*/
+/* =========================================================
+   THEME
+========================================================= */
+
+function applyTheme(theme) {
+  if (theme === "light") {
+    document.body.classList.add("light-theme");
+
+    themeIcon.textContent = "🌙";
+    themeText.textContent = "Dark mode";
+  } else {
+    document.body.classList.remove("light-theme");
+
+    themeIcon.textContent = "☀️";
+    themeText.textContent = "Light mode";
+  }
+
+  localStorage.setItem("theo_theme", theme);
+}
+
+
+function initializeTheme() {
+  const savedTheme = localStorage.getItem("theo_theme");
+
+  applyTheme(
+    savedTheme === "light"
+      ? "light"
+      : "dark"
+  );
+}
+
+
+themeToggle.addEventListener("click", () => {
+  const isLight =
+    document.body.classList.contains("light-theme");
+
+  applyTheme(
+    isLight
+      ? "dark"
+      : "light"
+  );
+});
+
+
+/* =========================================================
+   HISTORY SIDEBAR
+========================================================= */
+
+function openHistory() {
+  historySidebar.classList.add("open");
+  historyOverlay.classList.add("open");
+
+  document.body.classList.add("history-open");
+
+  loadConversations();
+}
+
+
+function closeHistory() {
+  historySidebar.classList.remove("open");
+  historyOverlay.classList.remove("open");
+
+  document.body.classList.remove("history-open");
+}
+
+
+openHistoryButton.addEventListener(
+  "click",
+  openHistory
+);
+
+
+closeHistoryButton.addEventListener(
+  "click",
+  closeHistory
+);
+
+
+historyOverlay.addEventListener(
+  "click",
+  closeHistory
+);
+
+
+/* =========================================================
+   CREATE CONVERSATION
+========================================================= */
+
 async function createConversation() {
   const response = await fetch(
     "/api/conversations",
     {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify({
         userId
       })
@@ -48,8 +137,7 @@ async function createConversation() {
     );
   }
 
-  conversationId =
-    data.conversationId;
+  conversationId = data.conversationId;
 
   localStorage.setItem(
     "theo_conversation_id",
@@ -62,16 +150,17 @@ async function createConversation() {
 }
 
 
-/*
-  Load messages from current conversation
-*/
+/* =========================================================
+   LOAD CURRENT CONVERSATION
+========================================================= */
+
 async function loadConversationHistory() {
   if (!userId || !conversationId) {
     return;
   }
 
   const response = await fetch(
-    `/api/messages/${encodeURIComponent(userId)}/${encodeURIComponent(conversationId)}`
+    `/api/messages/${userId}/${conversationId}`
   );
 
   const data = await response.json();
@@ -83,56 +172,54 @@ async function loadConversationHistory() {
     );
   }
 
-  conversationHistory =
-    (data.messages || [])
-      .filter(
-        message =>
-          message.role === "user" ||
-          message.role === "assistant"
-      )
-      .map(message => ({
+  conversationHistory = data.messages
+    .filter(
+      message =>
+        message.role === "user" ||
+        message.role === "assistant"
+    )
+    .map(
+      message => ({
         role: message.role,
         content: message.content
-      }))
-      .slice(-20);
+      })
+    )
+    .slice(-20);
 
   chat.innerHTML = "";
 
-  if (
-    conversationHistory.length === 0
-  ) {
+  if (conversationHistory.length === 0) {
     showWelcome();
     return;
   }
 
-  conversationHistory.forEach(
-    message => {
-      addMessage(
-        message.content,
-        message.role
-      );
-    }
-  );
+  conversationHistory.forEach(message => {
+    addMessage(
+      message.content,
+      message.role
+    );
+  });
 }
 
 
-/*
-  Load all previous conversations
-*/
+/* =========================================================
+   LOAD CONVERSATIONS
+========================================================= */
+
 async function loadConversations() {
   if (!userId) {
     return;
   }
 
-  try {
-    conversationList.innerHTML = `
-      <div class="conversation-loading">
-        Loading conversations...
-      </div>
-    `;
+  conversationList.innerHTML = `
+    <div class="history-empty">
+      Loading chats...
+    </div>
+  `;
 
+  try {
     const response = await fetch(
-      `/api/conversations/${encodeURIComponent(userId)}`
+      `/api/conversations/${userId}`
     );
 
     const data = await response.json();
@@ -144,131 +231,153 @@ async function loadConversations() {
       );
     }
 
-    const conversations =
+    conversations =
       data.conversations || [];
 
-    conversationList.innerHTML = "";
-
-    if (conversations.length === 0) {
-      conversationList.innerHTML = `
-        <div class="conversation-empty">
-          No previous chats yet.
-        </div>
-      `;
-
-      return;
-    }
-
-    conversations.forEach(
-      conversation => {
-
-        const button =
-          document.createElement("button");
-
-        button.type = "button";
-
-        button.className =
-          "conversation-item";
-
-        if (
-          conversation.id ===
-          conversationId
-        ) {
-          button.classList.add(
-            "active"
-          );
-        }
-
-        const title =
-          document.createElement("div");
-
-        title.className =
-          "conversation-title";
-
-        title.textContent =
-          conversation.title &&
-          conversation.title !== "New Chat"
-            ? conversation.title
-            : "New Chat";
-
-        const date =
-          document.createElement("div");
-
-        date.className =
-          "conversation-date";
-
-        date.textContent =
-          formatConversationDate(
-            conversation.updated_at ||
-            conversation.created_at
-          );
-
-        button.appendChild(title);
-        button.appendChild(date);
-
-        button.addEventListener(
-          "click",
-          async () => {
-
-            await openConversation(
-              conversation.id
-            );
-
-          }
-        );
-
-        conversationList.appendChild(
-          button
-        );
-      }
+    renderConversations(
+      conversationSearch.value
     );
 
   } catch (error) {
-
     console.error(
       "Conversation history error:",
       error
     );
 
     conversationList.innerHTML = `
-      <div class="conversation-empty">
-        Could not load previous chats.
+      <div class="history-empty">
+        Could not load your chats.
       </div>
     `;
   }
 }
 
 
-/*
-  Open an existing conversation
-*/
-async function openConversation(
-  selectedConversationId
-) {
-  try {
+/* =========================================================
+   RENDER CONVERSATIONS
+========================================================= */
 
-    conversationId =
-      selectedConversationId;
+function renderConversations(searchTerm = "") {
+  const term =
+    searchTerm
+      .trim()
+      .toLowerCase();
 
-    localStorage.setItem(
-      "theo_conversation_id",
-      conversationId
+  const filtered =
+    conversations.filter(
+      conversation => {
+        const title =
+          String(
+            conversation.title ||
+            ""
+          ).toLowerCase();
+
+        return title.includes(term);
+      }
     );
 
-    conversationHistory = [];
+  if (filtered.length === 0) {
+    conversationList.innerHTML = `
+      <div class="history-empty">
+        ${
+          term
+            ? "No conversations found."
+            : "No conversations yet."
+        }
+      </div>
+    `;
 
+    return;
+  }
+
+  conversationList.innerHTML = "";
+
+  filtered.forEach(conversation => {
+    const id = conversation.id;
+
+    const title =
+      conversation.title ||
+      "New conversation";
+
+    const date =
+      conversation.updated_at ||
+      conversation.created_at;
+
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+
+    button.className =
+      "conversation-item";
+
+    if (
+      String(id) ===
+      String(conversationId)
+    ) {
+      button.classList.add("active");
+    }
+
+    button.innerHTML = `
+      <span class="conversation-name">
+        ${escapeHtml(
+          makeConversationTitle(title)
+        )}
+      </span>
+
+      <span class="conversation-date">
+        ${formatDate(date)}
+      </span>
+    `;
+
+    button.addEventListener(
+      "click",
+      () => selectConversation(id)
+    );
+
+    conversationList.appendChild(
+      button
+    );
+  });
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+conversationSearch.addEventListener(
+  "input",
+  () => {
+    renderConversations(
+      conversationSearch.value
+    );
+  }
+);
+
+
+/* =========================================================
+   SELECT CONVERSATION
+========================================================= */
+
+async function selectConversation(id) {
+  conversationId = id;
+
+  localStorage.setItem(
+    "theo_conversation_id",
+    conversationId
+  );
+
+  try {
     await loadConversationHistory();
 
-    closeConversationPanel();
-
-    await loadConversations();
+    closeHistory();
 
     input.focus();
 
   } catch (error) {
-
     console.error(
-      "Open conversation error:",
+      "Conversation loading error:",
       error
     );
 
@@ -279,97 +388,52 @@ async function openConversation(
 }
 
 
-/*
-  Format conversation date
-*/
-function formatConversationDate(
-  dateString
-) {
-  if (!dateString) {
-    return "";
-  }
+/* =========================================================
+   NEW CHAT
+========================================================= */
 
-  const date =
-    new Date(dateString);
+async function startNewChat() {
+  try {
+    await createConversation();
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return "";
-  }
+    showWelcome();
 
-  return date.toLocaleString(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
-    }
-  );
-}
+    conversationSearch.value = "";
 
+    await loadConversations();
 
-/*
-  Open conversation sidebar
-*/
-function openConversationPanel() {
+    closeHistory();
 
-  conversationPanel.classList.add(
-    "open"
-  );
+    input.value = "";
 
-  loadConversations();
-}
+    input.focus();
 
+  } catch (error) {
+    console.error(
+      "New chat error:",
+      error
+    );
 
-/*
-  Close conversation sidebar
-*/
-function closeConversationPanel() {
-
-  conversationPanel.classList.remove(
-    "open"
-  );
-}
-
-
-/*
-  Initialize user
-*/
-async function initializeUser() {
-
-  if (!userId) {
-
-    userId =
-      crypto.randomUUID();
-
-    localStorage.setItem(
-      "theo_user_id",
-      userId
+    alert(
+      "Could not start a new conversation."
     );
   }
-
-  if (!conversationId) {
-
-    await createConversation();
-  }
-
-  await loadConversationHistory();
-
-  await loadConversations();
 }
 
 
-/*
-  Send message
-*/
+historyNewChatButton.addEventListener(
+  "click",
+  startNewChat
+);
+
+
+/* =========================================================
+   SEND MESSAGE
+========================================================= */
+
 form.addEventListener(
   "submit",
   async event => {
-
     event.preventDefault();
 
     const message =
@@ -378,6 +442,8 @@ form.addEventListener(
     if (!message) {
       return;
     }
+
+    lastUserMessage = message;
 
     addMessage(
       message,
@@ -394,7 +460,6 @@ form.addEventListener(
       addTypingIndicator();
 
     try {
-
       const response =
         await fetch(
           "/api/chat",
@@ -422,19 +487,15 @@ form.addEventListener(
       let data;
 
       try {
-
         data =
           JSON.parse(text);
-
       } catch {
-
         throw new Error(
           "Server returned invalid JSON"
         );
       }
 
       if (!response.ok) {
-
         throw new Error(
           data.error ||
           "Request failed"
@@ -462,20 +523,14 @@ form.addEventListener(
       conversationHistory =
         conversationHistory.slice(-20);
 
-      /*
-        Refresh conversation list
-        so the latest chat appears
-        at the top.
-      */
       await loadConversations();
 
     } catch (error) {
-
       thinking.remove();
 
       addMessage(
         "Sorry, something went wrong: " +
-          error.message,
+        error.message,
         "assistant"
       );
 
@@ -485,71 +540,558 @@ form.addEventListener(
       );
 
     } finally {
-
-      sendButton.disabled =
-        false;
-
+      sendButton.disabled = false;
       input.focus();
     }
   }
 );
 
 
-/*
-  New Chat button
-*/
-newChatButton.addEventListener(
-  "click",
-  async () => {
+/* =========================================================
+   ADD MESSAGE
+========================================================= */
 
-    try {
+function addMessage(
+  text,
+  sender
+) {
+  const message =
+    document.createElement("div");
 
-      await createConversation();
+  message.className =
+    `message ${sender}`;
 
-      showWelcome();
+  const content =
+    document.createElement("div");
 
-      await loadConversations();
+  content.className =
+    "message-content";
 
-      /*
-        Open history so the user
-        can immediately see previous chats.
-      */
-      openConversationPanel();
+  const bubble =
+    document.createElement("div");
 
-      input.focus();
+  bubble.className =
+    "bubble";
 
-    } catch (error) {
+  bubble.textContent =
+    text;
 
-      console.error(
-        "New chat error:",
-        error
-      );
+  content.appendChild(
+    bubble
+  );
 
-      alert(
-        "Could not start a new conversation."
+  if (sender === "assistant") {
+    content.appendChild(
+      createMessageActions(
+        text
+      )
+    );
+  }
+
+  message.appendChild(
+    content
+  );
+
+  chat.appendChild(
+    message
+  );
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+  return message;
+}
+
+
+/* =========================================================
+   MESSAGE ACTIONS
+========================================================= */
+
+function createMessageActions(text) {
+  const actions =
+    document.createElement("div");
+
+  actions.className =
+    "message-actions";
+
+
+  /* COPY */
+
+  const copyButton =
+    createActionButton(
+      "⧉",
+      "Copy"
+    );
+
+  copyButton.addEventListener(
+    "click",
+    async () => {
+      try {
+        await navigator.clipboard.writeText(
+          text
+        );
+
+        copyButton.textContent =
+          "✓";
+
+        setTimeout(
+          () => {
+            copyButton.textContent =
+              "⧉";
+          },
+          1200
+        );
+
+      } catch (error) {
+        console.error(
+          "Copy error:",
+          error
+        );
+      }
+    }
+  );
+
+
+  /* LIKE */
+
+  const likeButton =
+    createActionButton(
+      "👍",
+      "Good response"
+    );
+
+  likeButton.addEventListener(
+    "click",
+    () => {
+      likeButton.textContent =
+        "👍✓";
+    }
+  );
+
+
+  /* DISLIKE */
+
+  const dislikeButton =
+    createActionButton(
+      "👎",
+      "Bad response"
+    );
+
+  dislikeButton.addEventListener(
+    "click",
+    () => {
+      dislikeButton.textContent =
+        "👎✓";
+    }
+  );
+
+
+  /* TEXT TO SPEECH */
+
+  const voiceButton =
+    createActionButton(
+      "🔊",
+      "Read aloud"
+    );
+
+  voiceButton.addEventListener(
+    "click",
+    () => {
+      if (
+        !("speechSynthesis" in window)
+      ) {
+        alert(
+          "Text-to-speech is not supported on this device."
+        );
+
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const speech =
+        new SpeechSynthesisUtterance(
+          text
+        );
+
+      speech.lang =
+        "en-US";
+
+      window.speechSynthesis.speak(
+        speech
       );
     }
-  }
-);
+  );
 
 
-/*
-  Close sidebar
-*/
-closeHistoryButton.addEventListener(
-  "click",
-  () => {
-    closeConversationPanel();
+  /* SHARE */
+
+  const shareButton =
+    createActionButton(
+      "↗",
+      "Share"
+    );
+
+  shareButton.addEventListener(
+    "click",
+    async () => {
+      try {
+        if (
+          navigator.share
+        ) {
+          await navigator.share({
+            title: "Theo AI",
+            text
+          });
+
+        } else {
+          await navigator.clipboard.writeText(
+            text
+          );
+
+          alert(
+            "Message copied. You can now share it."
+          );
+        }
+
+      } catch (error) {
+        if (
+          error.name !==
+          "AbortError"
+        ) {
+          console.error(
+            "Share error:",
+            error
+          );
+        }
+      }
+    }
+  );
+
+
+  /* MORE MENU */
+
+  const menuWrapper =
+    document.createElement(
+      "div"
+    );
+
+  menuWrapper.className =
+    "message-menu";
+
+  const menuButton =
+    createActionButton(
+      "⋮",
+      "More options"
+    );
+
+  const popup =
+    document.createElement(
+      "div"
+    );
+
+  popup.className =
+    "message-menu-popup";
+
+
+  /* DATE AND TIME */
+
+  const timeItem =
+    document.createElement(
+      "button"
+    );
+
+  timeItem.type =
+    "button";
+
+  timeItem.className =
+    "message-menu-item";
+
+  timeItem.textContent =
+    "🕒 " +
+    formatFullDate(
+      new Date()
+    );
+
+
+  /* BRANCH */
+
+  const branchItem =
+    document.createElement(
+      "button"
+    );
+
+  branchItem.type =
+    "button";
+
+  branchItem.className =
+    "message-menu-item";
+
+  branchItem.textContent =
+    "🌿 Branch in new chat";
+
+  branchItem.addEventListener(
+    "click",
+    async () => {
+      await branchConversation();
+
+      popup.classList.remove(
+        "open"
+      );
+    }
+  );
+
+
+  /* RETRY */
+
+  const retryItem =
+    document.createElement(
+      "button"
+    );
+
+  retryItem.type =
+    "button";
+
+  retryItem.className =
+    "message-menu-item";
+
+  retryItem.textContent =
+    "↻ Retry";
+
+  retryItem.addEventListener(
+    "click",
+    async () => {
+      popup.classList.remove(
+        "open"
+      );
+
+      await retryLastMessage();
+    }
+  );
+
+
+  popup.appendChild(
+    timeItem
+  );
+
+  popup.appendChild(
+    branchItem
+  );
+
+  popup.appendChild(
+    retryItem
+  );
+
+  menuWrapper.appendChild(
+    menuButton
+  );
+
+  menuWrapper.appendChild(
+    popup
+  );
+
+
+  menuButton.addEventListener(
+    "click",
+    event => {
+      event.stopPropagation();
+
+      closeAllMenus(
+        popup
+      );
+
+      popup.classList.toggle(
+        "open"
+      );
+    }
+  );
+
+
+  actions.appendChild(
+    copyButton
+  );
+
+  actions.appendChild(
+    likeButton
+  );
+
+  actions.appendChild(
+    dislikeButton
+  );
+
+  actions.appendChild(
+    voiceButton
+  );
+
+  actions.appendChild(
+    shareButton
+  );
+
+  actions.appendChild(
+    menuWrapper
+  );
+
+  return actions;
+}
+
+
+function createActionButton(
+  icon,
+  label
+) {
+  const button =
+    document.createElement(
+      "button"
+    );
+
+  button.type =
+    "button";
+
+  button.className =
+    "message-action";
+
+  button.textContent =
+    icon;
+
+  button.title =
+    label;
+
+  button.setAttribute(
+    "aria-label",
+    label
+  );
+
+  return button;
+}
+
+
+/* =========================================================
+   BRANCH IN NEW CHAT
+========================================================= */
+
+async function branchConversation() {
+  try {
+    const branchHistory =
+      [...conversationHistory];
+
+    await createConversation();
+
+    conversationHistory =
+      branchHistory;
+
+    chat.innerHTML = "";
+
+    conversationHistory.forEach(
+      message => {
+        addMessage(
+          message.content,
+          message.role
+        );
+      }
+    );
+
+    await loadConversations();
+
     input.focus();
+
+  } catch (error) {
+    console.error(
+      "Branch error:",
+      error
+    );
+
+    alert(
+      "Could not create a branch."
+    );
   }
-);
+}
 
 
-/*
-  Show welcome screen
-*/
+/* =========================================================
+   RETRY
+========================================================= */
+
+async function retryLastMessage() {
+  if (
+    !lastUserMessage
+  ) {
+    for (
+      let i =
+        conversationHistory.length - 1;
+      i >= 0;
+      i--
+    ) {
+      if (
+        conversationHistory[i].role ===
+        "user"
+      ) {
+        lastUserMessage =
+          conversationHistory[i].content;
+
+        break;
+      }
+    }
+  }
+
+  if (
+    !lastUserMessage
+  ) {
+    return;
+  }
+
+  const messageToRetry =
+    lastUserMessage;
+
+  let lastUserIndex = -1;
+
+  for (
+    let i =
+      conversationHistory.length - 1;
+    i >= 0;
+    i--
+  ) {
+    if (
+      conversationHistory[i].role ===
+      "user"
+    ) {
+      lastUserIndex = i;
+      break;
+    }
+  }
+
+  if (
+    lastUserIndex !== -1
+  ) {
+    conversationHistory =
+      conversationHistory.slice(
+        0,
+        lastUserIndex
+      );
+  }
+
+  chat.innerHTML = "";
+
+  conversationHistory.forEach(
+    message => {
+      addMessage(
+        message.content,
+        message.role
+      );
+    }
+  );
+
+  input.value =
+    messageToRetry;
+
+  form.requestSubmit();
+}
+
+
+/* =========================================================
+   WELCOME SCREEN
+========================================================= */
+
 function showWelcome() {
-
   chat.innerHTML = `
     <div class="welcome">
 
@@ -570,8 +1112,26 @@ function showWelcome() {
 
     <div class="message assistant">
 
-      <div class="bubble">
-        What would you like to talk about?
+      <div class="message-content">
+
+        <div class="bubble">
+          What would you like to talk about?
+        </div>
+
+        <div class="message-actions">
+
+          <button
+            class="message-action"
+            type="button"
+            title="Copy"
+            aria-label="Copy"
+            onclick="copyText('What would you like to talk about?')"
+          >
+            ⧉
+          </button>
+
+        </div>
+
       </div>
 
     </div>
@@ -579,57 +1139,42 @@ function showWelcome() {
 }
 
 
-/*
-  Add chat message
-*/
-function addMessage(
-  text,
-  sender
-) {
+/* =========================================================
+   COPY HELPER
+========================================================= */
 
-  const message =
-    document.createElement("div");
-
-  message.className =
-    `message ${sender}`;
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "bubble";
-
-  bubble.textContent =
-    text;
-
-  message.appendChild(
-    bubble
-  );
-
-  chat.appendChild(
-    message
-  );
-
-  chat.scrollTop =
-    chat.scrollHeight;
-
-  return message;
-}
+window.copyText =
+  async function(text) {
+    try {
+      await navigator.clipboard.writeText(
+        text
+      );
+    } catch (error) {
+      console.error(
+        "Copy failed:",
+        error
+      );
+    }
+  };
 
 
-/*
-  Typing indicator
-*/
+/* =========================================================
+   TYPING INDICATOR
+========================================================= */
+
 function addTypingIndicator() {
-
   const message =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   message.className =
     "message assistant typing";
 
   const bubble =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   bubble.className =
     "bubble";
@@ -639,9 +1184,10 @@ function addTypingIndicator() {
     i < 3;
     i++
   ) {
-
     const dot =
-      document.createElement("span");
+      document.createElement(
+        "span"
+      );
 
     dot.className =
       "typing-dot";
@@ -666,12 +1212,407 @@ function addTypingIndicator() {
 }
 
 
-/*
-  Start Theo
-*/
+/* ==============
+   MESSAGE ACTIONS
+========================================================= */
+
+/* =========================================================
+   BRANCH IN NEW CHAT
+========================================================= */
+
+async function branchConversation() {
+  try {
+    const branchHistory =
+      [...conversationHistory];
+
+    await createConversation();
+
+    conversationHistory =
+      branchHistory;
+
+    chat.innerHTML = "";
+
+    conversationHistory.forEach(
+      message => {
+        addMessage(
+          message.content,
+          message.role
+        );
+      }
+    );
+
+    await loadConversations();
+
+    input.focus();
+
+  } catch (error) {
+    console.error(
+      "Branch error:",
+      error
+    );
+
+    alert(
+      "Could not create a branch."
+    );
+  }
+}
+
+
+/* =========================================================
+   RETRY
+========================================================= */
+
+async function retryLastMessage() {
+  if (
+    !lastUserMessage
+  ) {
+    for (
+      let i =
+        conversationHistory.length - 1;
+      i >= 0;
+      i--
+    ) {
+      if (
+        conversationHistory[i].role ===
+        "user"
+      ) {
+        lastUserMessage =
+          conversationHistory[i].content;
+
+        break;
+      }
+    }
+  }
+
+  if (
+    !lastUserMessage
+  ) {
+    return;
+  }
+
+  const messageToRetry =
+    lastUserMessage;
+
+  let lastUserIndex = -1;
+
+  for (
+    let i =
+      conversationHistory.length - 1;
+    i >= 0;
+    i--
+  ) {
+    if (
+      conversationHistory[i].role ===
+      "user"
+    ) {
+      lastUserIndex = i;
+      break;
+    }
+  }
+
+  if (
+    lastUserIndex !== -1
+  ) {
+    conversationHistory =
+      conversationHistory.slice(
+        0,
+        lastUserIndex
+      );
+  }
+
+  chat.innerHTML = "";
+
+  conversationHistory.forEach(
+    message => {
+      addMessage(
+        message.content,
+        message.role
+      );
+    }
+  );
+
+  input.value =
+    messageToRetry;
+
+  form.requestSubmit();
+}
+
+
+/* =========================================================
+   WELCOME SCREEN
+========================================================= */
+
+function showWelcome() {
+  chat.innerHTML = `
+    <div class="welcome">
+
+      <div class="welcome-avatar">
+        T
+      </div>
+
+      <h2>
+        Hello, I'm Theo 👋
+      </h2>
+
+      <p>
+        Your personal AI assistant.
+        Ask me anything and let's get started.
+      </p>
+
+    </div>
+
+    <div class="message assistant">
+
+      <div class="message-content">
+
+        <div class="bubble">
+          What would you like to talk about?
+        </div>
+
+        <div class="message-actions">
+
+          <button
+            class="message-action"
+            type="button"
+            title="Copy"
+            aria-label="Copy"
+            onclick="copyText('What would you like to talk about?')"
+          >
+            ⧉
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   COPY HELPER
+========================================================= */
+
+window.copyText =
+  async function(text) {
+    try {
+      await navigator.clipboard.writeText(
+        text
+      );
+    } catch (error) {
+      console.error(
+        "Copy failed:",
+        error
+      );
+    }
+  };
+
+
+/* =========================================================
+   TYPING INDICATOR
+========================================================= */
+
+function addTypingIndicator() {
+  const message =
+    document.createElement(
+      "div"
+    );
+
+  message.className =
+    "message assistant typing";
+
+  const bubble =
+    document.createElement(
+      "div"
+    );
+
+  bubble.className =
+    "bubble";
+
+  for (
+    let i = 0;
+    i < 3;
+    i++
+  ) {
+    const dot =
+      document.createElement(
+        "span"
+      );
+
+    dot.className =
+      "typing-dot";
+
+    bubble.appendChild(
+      dot
+    );
+  }
+
+  message.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    message
+  );
+
+  chat.scrollTop =
+    chat.scrollHeight;
+
+  return message;
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+}
+
+
+function makeConversationTitle(title) {
+  const clean =
+    String(title || "")
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+  if (!clean) {
+    return "New conversation";
+  }
+
+  return clean.length > 55
+    ? clean.slice(0, 55) + "..."
+    : clean;
+}
+
+
+function formatDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "";
+  }
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    }
+  );
+}
+
+
+function formatFullDate(date) {
+  return date.toLocaleString(
+    undefined,
+    {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }
+  );
+}
+
+
+function closeAllMenus(
+  except = null
+) {
+  document
+    .querySelectorAll(
+      ".message-menu-popup.open"
+    )
+    .forEach(menu => {
+      if (menu !== except) {
+        menu.classList.remove(
+          "open"
+        );
+      }
+    });
+}
+
+
+/* =========================================================
+   CLOSE MENUS WHEN CLICKING ELSEWHERE
+========================================================= */
+
+document.addEventListener(
+  "click",
+  event => {
+    if (
+      !event.target.closest(
+        ".message-menu"
+      )
+    ) {
+      closeAllMenus();
+    }
+  }
+);
+
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+async function initializeUser() {
+  initializeTheme();
+
+  if (!userId) {
+    userId =
+      crypto.randomUUID();
+
+    localStorage.setItem(
+      "theo_user_id",
+      userId
+    );
+  }
+
+  if (!conversationId) {
+    await createConversation();
+  }
+
+  await loadConversationHistory();
+
+  await loadConversations();
+}
+
+
 initializeUser().catch(
   error => {
-
     console.error(
       "Initialization error:",
       error

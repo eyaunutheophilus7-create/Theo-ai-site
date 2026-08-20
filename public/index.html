@@ -3,74 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <meta name="theme-color" content="#0b1020">
+
   <title>Theo AI</title>
+
   <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
 
-  <main class="app">
+  <!-- History Overlay -->
+  <div
+    id="history-overlay"
+    class="history-overlay"
+  ></div>
 
-    <!-- Header -->
-    <header class="header">
 
-      <div class="brand">
-        <div class="avatar">T</div>
+  <!-- History Sidebar -->
+  <aside
+    id="history-sidebar"
+    class="history-sidebar"
+  >
 
-        <div class="brand-info">
-          <h1>Theo AI</h1>
+    <div class="history-header">
 
-          <div class="status">
-            <span class="status-dot"></span>
-            Online
-          </div>
-        </div>
+      <div class="theo-logo">
+        Theo AI
       </div>
 
       <button
-        id="new-chat"
-        class="new-chat"
+        id="close-history"
+        class="icon-button"
+        type="button"
+        aria-label="Close chat history"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="history-tools">
+
+      <div class="history-search">
+
+        <span>⌕</span>
+
+        <input
+          id="conversation-search"
+          type="search"
+          placeholder="Search chats..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <button
+        id="history-new-chat"
+        class="history-new-chat"
         type="button"
       >
-        + New Chat
+        <span>＋</span>
+        <span>New Chat</span>
       </button>
+
+
+      <button
+        id="theme-toggle"
+        class="theme-toggle"
+        type="button"
+        aria-label="Switch theme"
+      >
+
+        <span id="theme-icon">
+          ☀️
+        </span>
+
+        <span id="theme-text">
+          Light mode
+        </span>
+
+      </button>
+
+    </div>
+
+
+    <div class="history-title">
+      Your chats
+    </div>
+
+
+    <div
+      id="conversation-list"
+      class="conversation-list"
+    >
+
+      <div class="history-empty">
+        No conversations yet.
+      </div>
+
+    </div>
+
+  </aside>
+
+
+  <!-- Main Application -->
+  <main class="app">
+
+
+    <!-- Main Header -->
+    <header class="header">
+
+      <button
+        id="open-history"
+        class="menu-button"
+        type="button"
+        aria-label="Open chat history"
+      >
+        ☰
+      </button>
+
+      <div class="header-spacer"></div>
 
     </header>
 
 
-    <!-- Conversation History -->
-    <aside id="conversation-panel" class="conversation-panel">
-
-      <div class="conversation-header">
-
-        <h2>Previous Chats</h2>
-
-        <button
-          id="close-history"
-          class="close-history"
-          type="button"
-          aria-label="Close conversation history"
-        >
-          ×
-        </button>
-
-      </div>
-
-      <div
-        id="conversation-list"
-        class="conversation-list"
-      >
-        <div class="conversation-loading">
-          Loading conversations...
-        </div>
-      </div>
-
-    </aside>
-
-
     <!-- Chat -->
-    <section id="chat" class="chat">
+    <section
+      id="chat"
+      class="chat"
+    >
 
       <div class="welcome">
 
@@ -78,18 +142,26 @@
           T
         </div>
 
-        <h2>Hello, I'm Theo 👋</h2>
+        <h2>
+          Hello, I'm Theo 👋
+        </h2>
 
         <p>
-          Your personal AI assistant. Ask me anything and let's get started.
+          Your personal AI assistant.
+          Ask me anything and let's get started.
         </p>
 
       </div>
 
+
       <div class="message assistant">
 
-        <div class="bubble">
-          What would you like to talk about?
+        <div class="message-content">
+
+          <div class="bubble">
+            What would you like to talk about?
+          </div>
+
         </div>
 
       </div>
@@ -123,13 +195,10 @@
 
       </div>
 
-      <div class="input-hint">
-        Theo AI can make mistakes. Check important information.
-      </div>
-
     </form>
 
   </main>
+
 
   <script src="/js/app.js"></script>
 
