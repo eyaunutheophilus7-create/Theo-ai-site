@@ -302,14 +302,37 @@ app.post("/api/messages", async (req, res) => {
       [conversationId, userId, role, content]
     );
 
-    await pool.query(
-      `
-      UPDATE conversations
-      SET updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND user_id = $2
-      `,
-      [conversationId, userId]
-    );
+    if (role === "user") {
+      await pool.query(
+        `
+        UPDATE conversations
+        SET
+          title = CASE
+            WHEN title IS NULL
+              OR title = ''
+              OR title = 'New Chat'
+              OR title = 'New conversation'
+            THEN LEFT(
+              REGEXP_REPLACE(TRIM($1), '\\s+', ' ', 'g'),
+              80
+            )
+            ELSE title
+          END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2 AND user_id = $3
+        `,
+        [content, conversationId, userId]
+      );
+    } else {
+      await pool.query(
+        `
+        UPDATE conversations
+        SET updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND user_id = $2
+        `,
+        [conversationId, userId]
+      );
+    }
 
     res.json({
       success: true
