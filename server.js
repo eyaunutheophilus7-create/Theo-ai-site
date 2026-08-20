@@ -520,9 +520,15 @@ app.get("/api/conversations/:userId", async (req, res) => {
     const result = await pool.query(
       `
       SELECT id, title, created_at, updated_at
-      FROM conversations
-      WHERE user_id = $1
-      ORDER BY updated_at DESC
+      FROM conversations c
+      WHERE c.user_id = $1
+        AND EXISTS (
+          SELECT 1
+          FROM messages m
+          WHERE m.conversation_id = c.id
+            AND m.user_id = c.user_id
+        )
+      ORDER BY c.updated_at DESC
       LIMIT 50
       `,
       [userId]

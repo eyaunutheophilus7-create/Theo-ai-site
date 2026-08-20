@@ -394,7 +394,9 @@ async function selectConversation(id) {
 
 async function startNewChat() {
   try {
-    await createConversation();
+    // Start a clean local chat without creating an empty database conversation
+    conversationId = null;
+    localStorage.removeItem("theo_conversation_id");
 
     conversationHistory = [];
     chat.innerHTML = "";
@@ -462,6 +464,11 @@ form.addEventListener(
       addTypingIndicator();
 
     try {
+      // Create the database conversation only when the user sends the first message
+      if (!conversationId) {
+        await createConversation();
+      }
+
       const response =
         await fetch(
           "/api/chat",
@@ -1603,12 +1610,11 @@ async function initializeUser() {
     );
   }
 
-  if (!conversationId) {
-    await createConversation();
-  }
-
   // Always start on the main Theo screen after a refresh.
   // Previous conversations remain available in History.
+  conversationId = null;
+  localStorage.removeItem("theo_conversation_id");
+
   conversationHistory = [];
   showWelcome();
 
