@@ -582,6 +582,29 @@ app.post("/api/chat", async (req, res) => {
       [conversationId, userId, userMessage]
     );
 
+    // Automatically set the conversation title from the first user message
+    await pool.query(
+      `
+      UPDATE conversations
+      SET
+        title = CASE
+          WHEN title IS NULL
+            OR title = ''
+            OR title = 'New Chat'
+            OR title = 'New conversation'
+          THEN LEFT(
+            REGEXP_REPLACE(TRIM($1), '\\s+', ' ', 'g'),
+            80
+          )
+          ELSE title
+        END,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+        AND user_id = $3
+      `,
+      [userMessage, conversationId, userId]
+    );
+
     /*
       Automatically extract useful long-term memories
     */
