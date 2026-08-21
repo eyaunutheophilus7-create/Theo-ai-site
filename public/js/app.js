@@ -1672,6 +1672,22 @@ initializeUser().catch(
   let nextPlaybackTime = 0;
 
   const setStatus = (message) => {
+        startButton.classList.remove("voice-active", "voice-connecting");
+
+        if (
+          message.includes("Connecting") ||
+          message.includes("Starting microphone")
+        ) {
+          startButton.classList.add("voice-connecting");
+        }
+
+        if (
+          message.includes("listening") ||
+          message.includes("Talk to Theo")
+        ) {
+          startButton.classList.add("voice-active");
+        }
+
     status.textContent = message;
   };
 

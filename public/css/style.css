@@ -788,3 +788,156 @@ button {
 body.history-open {
   overflow: hidden;
 }
+
+
+/* ===== THEO VOICE WAVE CONTROL ===== */
+
+.voice-compact-button {
+    width: 58px;
+    height: 58px;
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 18px;
+    background: linear-gradient(145deg, #1677ff, #0757d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 0 18px rgba(20,100,255,0.35);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.voice-compact-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 24px rgba(20,100,255,0.55);
+}
+
+.voice-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 28px;
+}
+
+.voice-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 8px rgba(255,255,255,0.8);
+    flex-shrink: 0;
+}
+
+.voice-waves {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 25px;
+}
+
+.voice-waves i {
+    display: block;
+    width: 3px;
+    border-radius: 4px;
+    background: #ffffff;
+    animation: theoVoiceWave 1s ease-in-out infinite;
+}
+
+.voice-waves i:nth-child(1) {
+    height: 8px;
+    animation-delay: -.4s;
+}
+
+.voice-waves i:nth-child(2) {
+    height: 15px;
+    animation-delay: -.3s;
+}
+
+.voice-waves i:nth-child(3) {
+    height: 23px;
+    animation-delay: -.2s;
+}
+
+.voice-waves i:nth-child(4) {
+    height: 16px;
+    animation-delay: -.1s;
+}
+
+.voice-waves i:nth-child(5) {
+    height: 9px;
+}
+
+@keyframes theoVoiceWave {
+    0%, 100% {
+        transform: scaleY(.55);
+        opacity: .65;
+    }
+
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+.voice-stop-compact {
+    background: linear-gradient(145deg, #0757d9, #003b9f);
+}
+
+.voice-stop-compact .voice-symbol {
+    gap: 0;
+}
+
+.voice-stop-compact .voice-dot {
+    width: 16px;
+    height: 16px;
+}
+
+
+/* Theo Live Voice active states */
+
+.voice-compact-button.voice-active {
+    animation: theoVoicePulse 1.5s ease-in-out infinite;
+    box-shadow:
+        0 0 12px rgba(20,100,255,.65),
+        0 0 28px rgba(20,100,255,.35);
+}
+
+.voice-compact-button.voice-connecting {
+    animation: theoVoiceConnecting 1s ease-in-out infinite;
+}
+
+.voice-compact-button.voice-active .voice-waves i {
+    animation-duration: .55s;
+}
+
+.voice-compact-button.voice-active .voice-dot {
+    animation: theoVoiceDot 1s ease-in-out infinite;
+}
+
+@keyframes theoVoicePulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.06);
+    }
+}
+
+@keyframes theoVoiceConnecting {
+    0%, 100% {
+        opacity: .65;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes theoVoiceDot {
+    0%, 100% {
+        transform: scale(.9);
+    }
+    50% {
+        transform: scale(1.15);
+    }
+}
