@@ -864,7 +864,8 @@ liveWss.on("connection", async (browserSocket) => {
         geminiSession = await ai.live.connect({
           model,
           config: {
-            responseModalities: [Modality.AUDIO]
+            responseModalities: [Modality.AUDIO],
+            inputAudioTranscription: {}
           },
           callbacks: {
             onopen: () => {
@@ -877,6 +878,21 @@ liveWss.on("connection", async (browserSocket) => {
             },
 
             onmessage: (message) => {
+              const serverContent =
+                message?.serverContent;
+
+              const inputTranscription =
+                serverContent?.inputTranscription;
+
+              if (inputTranscription?.text) {
+                sendBrowser({
+                  type: "live_transcription",
+                  text: inputTranscription.text,
+                  finished:
+                    inputTranscription.finished === true
+                });
+              }
+
               sendBrowser({
                 type: "live_message",
                 data: message

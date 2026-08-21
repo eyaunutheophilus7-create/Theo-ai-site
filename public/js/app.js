@@ -435,6 +435,119 @@ historyNewChatButton.addEventListener(
    SEND MESSAGE
 ========================================================= */
 
+async function sendMessageToTheo(message) {
+  message = message.trim();
+
+  if (!message) {
+    return;
+  }
+
+  lastUserMessage = message;
+
+  addMessage(
+    message,
+    "user"
+  );
+
+  input.value = "";
+
+  input.focus();
+
+  sendButton.disabled = true;
+
+  const thinking =
+    addTypingIndicator();
+
+  try {
+    if (!conversationId) {
+      await createConversation();
+    }
+
+    const response =
+      await fetch(
+        "/api/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            message,
+            history:
+              conversationHistory,
+            userId,
+            conversationId
+          })
+        }
+      );
+
+    const text =
+      await response.text();
+
+    let data;
+
+    try {
+      data =
+        JSON.parse(text);
+    } catch {
+      throw new Error(
+        "Server returned invalid JSON"
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        "Request failed"
+      );
+    }
+
+    thinking.remove();
+
+    addMessage(
+      data.reply,
+      "assistant"
+    );
+
+    conversationHistory.push(
+      {
+        role: "user",
+        content: message
+      },
+      {
+        role: "assistant",
+        content: data.reply
+      }
+    );
+
+    conversationHistory =
+      conversationHistory.slice(-20);
+
+    await loadConversations();
+
+  } catch (error) {
+    thinking.remove();
+
+    addMessage(
+      "Sorry, something went wrong: " +
+      error.message,
+      "assistant"
+    );
+
+    console.error(
+      "Chat error:",
+      error
+    );
+
+  } finally {
+    sendButton.disabled = false;
+    input.focus();
+  }
+}
+
 form.addEventListener(
   "submit",
   async event => {
@@ -447,111 +560,9 @@ form.addEventListener(
       return;
     }
 
-    lastUserMessage = message;
-
-    addMessage(
-      message,
-      "user"
+    await sendMessageToTheo(
+      message
     );
-
-    input.value = "";
-
-    input.focus();
-
-    sendButton.disabled = true;
-
-    const thinking =
-      addTypingIndicator();
-
-    try {
-      // Create the database conversation only when the user sends the first message
-      if (!conversationId) {
-        await createConversation();
-      }
-
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              message,
-              history:
-                conversationHistory,
-              userId,
-              conversationId
-            })
-          }
-        );
-
-      const text =
-        await response.text();
-
-      let data;
-
-      try {
-        data =
-          JSON.parse(text);
-      } catch {
-        throw new Error(
-          "Server returned invalid JSON"
-        );
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          "Request failed"
-        );
-      }
-
-      thinking.remove();
-
-      addMessage(
-        data.reply,
-        "assistant"
-      );
-
-      conversationHistory.push(
-        {
-          role: "user",
-          content: message
-        },
-        {
-          role: "assistant",
-          content: data.reply
-        }
-      );
-
-      conversationHistory =
-        conversationHistory.slice(-20);
-
-      await loadConversations();
-
-    } catch (error) {
-      thinking.remove();
-
-      addMessage(
-        "Sorry, something went wrong: " +
-        error.message,
-        "assistant"
-      );
-
-      console.error(
-        "Chat error:",
-        error
-      );
-
-    } finally {
-      sendButton.disabled = false;
-      input.focus();
-    }
   }
 );
 
@@ -1988,7 +1999,7 @@ initializeUser().catch(
           );
         };
 
-        socket.onmessage = (event) => {
+        socket.onmessage = async (event) => {
           try {
             const payload =
               JSON.parse(event.data);
@@ -2000,6 +2011,30 @@ initializeUser().catch(
               setStatus(
                 "🟢 Theo is listening..."
               );
+              return;
+            }
+
+            if (
+              payload.type ===
+              "live_transcription"
+            ) {
+              const transcript =
+                (payload.text || "").trim();
+
+              if (
+                transcript &&
+                payload.finished === true
+              ) {
+                console.log(
+                  "Theo Live transcript:",
+                  transcript
+                );
+
+                await sendMessageToTheo(
+                  transcript
+                );
+              }
+
               return;
             }
 
