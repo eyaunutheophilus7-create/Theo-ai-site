@@ -196,7 +196,6 @@
 
       </div>
 
-    </form>
         <button
           id="voice-start-button"
           type="button"
@@ -204,7 +203,12 @@
           aria-label="Start voice conversation"
           title="Talk to Theo"
         >
-          <span class="voice-symbol" aria-hidden="true"><span class="voice-dot"></span><span class="voice-waves"><i></i><i></i><i></i><i></i><i></i></span></span>
+          <span class="voice-symbol" aria-hidden="true">
+            <span class="voice-dot"></span>
+            <span class="voice-waves">
+              <i></i><i></i><i></i><i></i><i></i>
+            </span>
+          </span>
         </button>
 
         <button
@@ -215,9 +219,30 @@
           title="End voice conversation"
           hidden
         >
-          <span class="voice-symbol" aria-hidden="true">◉</span>
+          <span class="voice-symbol voice-stop-symbol" aria-hidden="true">
+            <span class="voice-dot"></span>
+            <span class="voice-waves">
+              <i></i><i></i><i></i><i></i><i></i>
+            </span>
+          </span>
         </button>
 
+        <button
+          id="send-button"
+          type="submit"
+          aria-label="Send message"
+          title="Send message"
+        >
+          ↑
+        </button>
+      </div>
+
+      <div
+        id="voice-status"
+        class="voice-status"
+        aria-live="polite"
+      ></div>
+    </form>
 
 </main>
 

@@ -941,3 +941,179 @@ body.history-open {
         transform: scale(1.15);
     }
 }
+
+
+/* =========================================================
+   THEO LIVE VOICE — FINAL COMPOSER FIX
+========================================================= */
+
+.input-wrapper .voice-compact-button {
+  width: 46px;
+  height: 40px;
+  min-width: 46px;
+  flex: 0 0 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,.95) !important;
+  border-radius: 13px;
+  background: linear-gradient(145deg,#1677ff,#0757d9) !important;
+  color: #fff;
+  padding: 0;
+  cursor: pointer;
+  box-shadow:
+    0 3px 12px rgba(20,100,255,.28),
+    inset 0 0 0 1px rgba(255,255,255,.18);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.input-wrapper .voice-compact-button[hidden] {
+  display: none !important;
+}
+
+.input-wrapper .voice-compact-button:active {
+  transform: scale(.94);
+}
+
+.input-wrapper .voice-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 25px;
+  line-height: 0;
+}
+
+.input-wrapper .voice-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 7px rgba(255,255,255,.9);
+}
+
+.input-wrapper .voice-waves {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 24px;
+}
+
+.input-wrapper .voice-waves i {
+  display: block;
+  width: 2.5px;
+  border-radius: 4px;
+  background: #fff;
+  transform-origin: center;
+  animation: none;
+}
+
+.input-wrapper .voice-waves i:nth-child(1) { height: 7px; }
+.input-wrapper .voice-waves i:nth-child(2) { height: 13px; }
+.input-wrapper .voice-waves i:nth-child(3) { height: 21px; }
+.input-wrapper .voice-waves i:nth-child(4) { height: 14px; }
+.input-wrapper .voice-waves i:nth-child(5) { height: 8px; }
+
+/* Connecting / listening states */
+.input-wrapper .voice-compact-button.voice-connecting .voice-waves i {
+  animation: theoVoiceWave 1s ease-in-out infinite;
+}
+
+.input-wrapper .voice-compact-button.voice-connecting .voice-waves i:nth-child(1) {
+  animation-delay: -.4s;
+}
+
+.input-wrapper .voice-compact-button.voice-connecting .voice-waves i:nth-child(2) {
+  animation-delay: -.3s;
+}
+
+.input-wrapper .voice-compact-button.voice-connecting .voice-waves i:nth-child(3) {
+  animation-delay: -.2s;
+}
+
+.input-wrapper .voice-compact-button.voice-connecting .voice-waves i:nth-child(4) {
+  animation-delay: -.1s;
+}
+
+.input-wrapper .voice-compact-button.voice-active {
+  box-shadow:
+    0 4px 16px rgba(20,100,255,.42),
+    inset 0 0 0 1px rgba(255,255,255,.22);
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i {
+  animation: theoVoiceWave .65s ease-in-out infinite;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i:nth-child(1) {
+  animation-delay: -.5s;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i:nth-child(2) {
+  animation-delay: -.4s;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i:nth-child(3) {
+  animation-delay: -.3s;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i:nth-child(4) {
+  animation-delay: -.2s;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-waves i:nth-child(5) {
+  animation-delay: -.1s;
+}
+
+.input-wrapper .voice-compact-button.voice-active .voice-dot {
+  animation: theoVoiceDot .9s ease-in-out infinite;
+}
+
+.input-wrapper .voice-stop-compact {
+  background: linear-gradient(145deg,#0b63df,#003b9f) !important;
+}
+
+.voice-status {
+  min-height: 0;
+  margin-top: 3px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+@keyframes theoVoiceWave {
+  0%,100% {
+    transform: scaleY(.55);
+  }
+  50% {
+    transform: scaleY(1.18);
+  }
+}
+
+@keyframes theoVoiceDot {
+  0%,100% {
+    transform: scale(.85);
+    opacity: .7;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
+
+@media (max-width:600px) {
+  .input-wrapper .voice-compact-button {
+    width: 42px;
+    min-width: 42px;
+    flex-basis: 42px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .voice-status {
+    font-size: 9px;
+  }
+}
