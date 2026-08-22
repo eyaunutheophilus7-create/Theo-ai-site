@@ -1670,6 +1670,7 @@ initializeUser().catch(
 
   let playbackContext = null;
   let nextPlaybackTime = 0;
+  let liveTranscriptBuffer = "";
 
   const setStatus = (message) => {
         startButton.classList.remove("voice-active", "voice-connecting");
@@ -1937,77 +1938,136 @@ initializeUser().catch(
           );
 
           microphoneStream =
-            await navigator.mediaDevices
-              .getUserMedia({
-                audio: {
-                  channelCount: 1,
-                  echoCancellation: true,
-                  noiseSuppression: true,
-                  autoGainControl: true
-                }
-              });
-
-          audioContext =
-            new AudioContext();
-
-          await audioContext.resume();
-
-          source =
-            audioContext.createMediaStreamSource(
-              microphoneStream
-            );
-
-          processor =
-            audioContext.createScriptProcessor(
-              4096,
-              1,
-              1
-            );
-
-          processor.onaudioprocess =
-            (event) => {
-              if (
-                !socket ||
-                socket.readyState !==
-                  WebSocket.OPEN
-              ) {
-                return;
+          await navigator.mediaDevices
+            .getUserMedia({
+              audio: {
+                channelCount: 1,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
               }
+            });
 
-              const inputData =
-                event.inputBuffer
-                  .getChannelData(0);
+        audioContext =
+          new AudioContext();
 
-              const pcm =
-                floatTo16BitPCM(
-                  inputData
-                );
+        await audioContext.resume();
 
-              socket.send(
-                JSON.stringify({
-                  type:
-                    "realtime_input",
-                  data: {
-                    audio: {
-                      data:
-                        arrayBufferToBase64(
-                          pcm
-                        ),
-                      mimeType:
-                        "audio/pcm;rate=16000"
-                    }
-                  }
-                })
-              );
-            };
-
-          source.connect(processor);
-
-          processor.connect(
-            audioContext.destination
+        source =
+          audioContext.createMediaStreamSource(
+            microphoneStream
           );
 
-          startButton.hidden = true;
+        const inputSampleRate =
+          audioContext.sampleRate;
+
+        const targetSampleRate = 16000;
+
+        processor =
+          audioContext.createScriptProcessor(
+            4096,
+            1,
+            1
+          );
+
+        processor.onaudioprocess =
+          (event) => {
+            if (
+              !socket ||
+              socket.readyState !==
+                WebSocket.OPEN
+            ) {
+              return;
+            }
+
+            const inputData =
+              event.inputBuffer
+                .getChannelData(0);
+
+            const ratio =
+              inputSampleRate /
+              targetSampleRate;
+
+            const outputLength =
+              Math.max(
+                1,
+                Math.floor(
+                  inputData.length /
+                  ratio
+                )
+              );
+
+            const resampled =
+              new Float32Array(
+                outputLength
+              );
+
+            for (
+              let i = 0;
+              i < outputLength;
+              i++
+            ) {
+              const position =
+                i * ratio;
+
+              const left =
+                Math.floor(position);
+
+              const right =
+                Math.min(
+                  left + 1,
+                  inputData.length - 1
+                );
+
+              const weight =
+                position - left;
+
+              resampled[i] =
+                inputData[left] *
+                  (1 - weight) +
+                inputData[right] *
+                  weight;
+            }
+
+            const pcm =
+              floatTo16BitPCM(
+                resampled
+              );
+
+            socket.send(
+              JSON.stringify({
+                type:
+                  "realtime_input",
+                data: {
+                  audio: {
+                    data:
+                      arrayBufferToBase64(
+                        pcm
+                      ),
+                    mimeType:
+                      "audio/pcm;rate=16000"
+                  }
+                }
+              })
+            );
+          };
+
+        source.connect(processor);
+
+        const silentGain =
+          audioContext.createGain();
+
+        silentGain.gain.value = 0;
+
+        processor.connect(
+          silentGain
+        );
+
+        silentGain.connect(
+          audioContext.destination
+        );
+
+        startButton.hidden = true;
           stopButton.hidden = false;
 
           setStatus(
@@ -2037,18 +2097,39 @@ initializeUser().catch(
               const transcript =
                 (payload.text || "").trim();
 
+              if (transcript) {
+                liveTranscriptBuffer =
+                  (
+                    liveTranscriptBuffer +
+                    " " +
+                    transcript
+                  ).trim();
+
+                console.log(
+                  "Theo Live transcript fragment:",
+                  transcript
+                );
+              }
+
               if (
-                transcript &&
+                payload.turnComplete === true ||
                 payload.finished === true
               ) {
-                console.log(
-                  "Theo Live transcript:",
-                  transcript
-                );
+                const completeTranscript =
+                  liveTranscriptBuffer.trim();
 
-                await sendMessageToTheo(
-                  transcript
-                );
+                liveTranscriptBuffer = "";
+
+                if (completeTranscript) {
+                  console.log(
+                    "Theo Live complete transcript:",
+                    completeTranscript
+                  );
+
+                  await sendMessageToTheo(
+                    completeTranscript
+                  );
+                }
               }
 
               return;

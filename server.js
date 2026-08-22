@@ -865,7 +865,8 @@ liveWss.on("connection", async (browserSocket) => {
           model,
           config: {
             responseModalities: [Modality.AUDIO],
-            inputAudioTranscription: {}
+            inputAudioTranscription: {},
+            outputAudioTranscription: {}
           },
           callbacks: {
             onopen: () => {
@@ -889,7 +890,16 @@ liveWss.on("connection", async (browserSocket) => {
                   type: "live_transcription",
                   text: inputTranscription.text,
                   finished:
-                    inputTranscription.finished === true
+                    inputTranscription.finished === true,
+                  turnComplete:
+                    serverContent?.turnComplete === true
+                });
+              } else if (serverContent?.turnComplete === true) {
+                sendBrowser({
+                  type: "live_transcription",
+                  text: "",
+                  finished: true,
+                  turnComplete: true
                 });
               }
 
