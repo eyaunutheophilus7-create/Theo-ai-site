@@ -1119,275 +1119,686 @@ body.history-open {
 }
 
 /* =========================================================
-   THEO COMPOSER V2
+   THEO COMPOSER V2 — CLEAN DESIGN
    ========================================================= */
 
 .composer-v2 {
-  padding: 10px 14px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .composer-shell {
-  width: min(820px, 100%);
-  margin: 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: var(--panel);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-.composer-shell:focus-within {
-  border-color: var(--accent);
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.1),
-    0 0 0 3px rgba(99, 102, 241, 0.08);
-}
-
-.composer-top {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  position: relative;
+  width: 100%;
   min-height: 58px;
-  padding: 10px 10px 8px;
+  border: 1px solid rgba(120, 140, 180, 0.28);
+  border-radius: 20px;
+  background: rgba(16, 22, 38, 0.96);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.composer-top textarea {
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
+.composer-content {
+  width: 100%;
+  padding: 14px 16px 4px;
+  box-sizing: border-box;
+}
+
+#message-input {
+  width: 100%;
+  min-height: 24px;
   max-height: 180px;
-  padding: 9px 4px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
   resize: none;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 15px;
-  line-height: 1.45;
   overflow-y: auto;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.45;
+  box-sizing: border-box;
 }
 
-.composer-top textarea::placeholder {
-  color: var(--muted);
+#message-input::placeholder {
+  opacity: 0.55;
 }
 
-.composer-tool-button,
-.voice-compact-button,
-#send-button {
-  flex: 0 0 auto;
+.composer-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 10px 10px;
+  box-sizing: border-box;
 }
 
-.composer-tool-button {
+.composer-spacer {
+  flex: 1;
+}
+
+.composer-icon-button,
+.composer-aira-button {
   width: 38px;
   height: 38px;
-  display: flex;
+  flex: 0 0 38px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--panel-light);
-  color: var(--text);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease;
+  color: #3b82f6;
 }
 
-.composer-tool-button:hover {
-  background: var(--border);
-  transform: scale(1.04);
+.composer-icon-button:active,
+.composer-aira-button:active {
+  transform: scale(0.94);
 }
 
-.composer-identity {
-  display: flex;
-  align-items: center;
+.composer-line-icon {
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+}
+
+.composer-plus-icon::before,
+.composer-plus-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+}
+
+.composer-plus-icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.composer-mic-icon {
+  width: 20px;
+  height: 24px;
+  border: 2px solid currentColor;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.composer-mic-icon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 7px;
+  border-left: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-radius: 0 0 8px 8px;
+  transform: translateX(-50%);
+}
+
+.composer-mic-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 2px;
+  height: 4px;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.composer-send-icon {
+  width: 22px;
+  height: 24px;
+}
+
+.composer-send-icon::before,
+.composer-send-icon::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+  height: 2px;
+  border-radius: 2px;
+  transform-origin: right center;
+}
+
+.composer-send-icon::before {
+  width: 18px;
+  right: 2px;
+  top: 7px;
+  transform: rotate(-42deg);
+}
+
+.composer-send-icon::after {
+  width: 18px;
+  right: 2px;
+  bottom: 7px;
+  transform: rotate(42deg);
+}
+
+.composer-send-button {
+  color: #3b82f6;
+}
+
+.composer-aira-button {
+  width: auto;
+  min-width: 44px;
   gap: 5px;
-  flex: 0 0 auto;
-  align-self: center;
-  padding: 0 2px;
+  color: #3b82f6;
 }
 
 .composer-aira {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .composer-aira-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.55);
+  background: currentColor;
 }
-
-.composer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 26px;
-  padding: 0 13px 9px;
-}
-
-.composer-hint {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.composer-attachments {
-  width: min(820px, 100%);
-  margin: 0 auto 8px;
-}
-
-#send-button {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 0 0 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition:
-    transform 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-#send-button:hover:not(:disabled) {
-  background: var(--accent-hover);
-  transform: scale(1.04);
-}
-
-#send-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.composer-v2 .voice-compact-button {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text);
-}
-
-.composer-v2 .voice-compact-button:hover {
-  background: var(--panel-light);
-}
-
-.composer-v2 .voice-status {
-  min-height: 16px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  text-align: right;
-}
-
-#composer-file-input {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .composer-v2 {
-    padding: 8px 8px 12px;
-  }
-
-  .composer-shell {
-    border-radius: 19px;
-  }
-
-  .composer-top {
-    gap: 5px;
-    padding: 8px 7px 6px;
-  }
-
-  .composer-identity {
-    display: none;
-  }
-
-  .composer-tool-button,
-  .composer-v2 .voice-compact-button,
-  #send-button {
-    width: 36px;
-    height: 36px;
-  }
-
-  .composer-top textarea {
-    font-size: 16px;
-  }
-
-  .composer-bottom {
-    padding: 0 10px 7px;
-  }
-}
-
-/* Composer V2 attachment previews */
 
 .composer-attachments {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 0 2px;
 }
 
 .composer-attachment {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   gap: 7px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(70, 90, 130, 0.18);
+  border: 1px solid rgba(120, 140, 180, 0.22);
   max-width: 100%;
-  padding: 7px 9px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: var(--panel);
-  color: var(--text);
-  font-size: 11px;
+}
+
+.composer-attachment-preview {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
 }
 
 .composer-attachment-name {
-  max-width: 190px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .composer-attachment-size {
-  color: var(--muted);
-  white-space: nowrap;
+  opacity: 0.6;
+  font-size: 11px;
 }
 
 .composer-attachment-remove {
-  width: 20px;
-  height: 20px;
-  border: none;
-  border-radius: 50%;
-  background: var(--panel-light);
-  color: var(--muted);
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
+  font-size: 18px;
+}
+
+.voice-recording-controls {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 14px;
+  color: #3b82f6;
+  box-sizing: border-box;
+}
+
+.voice-recording-cancel,
+.voice-record-button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #3b82f6;
+  cursor: pointer;
+}
+
+.voice-recording-cancel {
+  font-size: 30px;
   line-height: 1;
 }
 
-.composer-attachment-remove:hover {
-  color: var(--text);
-  background: var(--border);
+.voice-waves {
+  flex: 1;
+  max-width: 180px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.voice-waves i {
+  width: 2px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 2px;
+  animation: theoVoiceWave 0.85s ease-in-out infinite alternate;
+}
+
+.voice-waves i:nth-child(2) { animation-delay: -0.2s; }
+.voice-waves i:nth-child(3) { animation-delay: -0.4s; }
+.voice-waves i:nth-child(4) { animation-delay: -0.1s; }
+.voice-waves i:nth-child(5) { animation-delay: -0.3s; }
+.voice-waves i:nth-child(6) { animation-delay: -0.5s; }
+.voice-waves i:nth-child(7) { animation-delay: -0.25s; }
+
+@keyframes theoVoiceWave {
+  from { height: 7px; }
+  to { height: 28px; }
+}
+
+.voice-record-lines {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.voice-record-lines::before,
+.voice-record-lines::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  width: 2px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.voice-record-lines::before {
+  left: 6px;
+}
+
+.voice-record-lines::after {
+  right: 6px;
+}
+
+.voice-status {
+  min-height: 0;
+  padding: 0 14px 5px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.composer-v2.is-recording .composer-content,
+.composer-v2.is-recording .composer-controls,
+.composer-v2.is-recording .voice-status {
+  display: none;
+}
+
+.composer-v2.has-content .composer-content {
+  padding-bottom: 0;
+}
+
+.composer-v2.has-content .composer-aira-button {
+  display: none;
+}
+
+.composer-v2:not(.has-content) .composer-send-button {
+  display: none;
+}
+
+.composer-v2.is-recording .voice-recording-controls {
+  display: flex;
+}
+
+@media (max-width: 520px) {
+  .composer-v2 {
+    padding: 8px;
+  }
+
+  .composer-shell {
+    border-radius: 18px;
+  }
+
+  .composer-controls {
+    min-height: 44px;
+  }
+
+  .composer-icon-button {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+}
+/* =========================================================
+   THEO COMPOSER V2 — AUTHORITATIVE DESIGN
+   ========================================================= */
+
+/* =========================================================
+   THEO COMPOSER V2 — AUTHORITATIVE DESIGN
+   ========================================================= */
+
+.composer-v2 {
+  width: 100%;
+}
+
+.composer-shell .composer-v2 {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.composer-shell .composer-top {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.composer-v2 #message-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  resize: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.composer-shell .composer-tool-button,
+.composer-shell .composer-icon-button,
+.composer-shell .composer-aira-button {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: #1976ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.composer-shell .composer-tool-button {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.composer-shell .composer-mic-icon,
+.composer-shell .composer-send-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  color: #1976ff;
+}
+
+.composer-shell .composer-mic-icon svg,
+.composer-shell .composer-send-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.composer-shell .composer-send-button {
+  display: none;
+}
+
+.composer-shell.has-content .composer-send-button {
+  display: inline-flex;
+}
+
+.composer-shell.has-content .composer-aira-button {
+  display: none;
+}
+
+.composer-shell:not(.has-content) .composer-send-button {
+  display: none;
+}
+
+.composer-shell:not(.has-content) .composer-aira-button {
+  display: inline-flex;
+}
+
+.composer-shell .composer-aira {
+  color: #1976ff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.composer-shell .composer-aira-dot {
+  width: 5px;
+  height: 5px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #1976ff;
+}
+
+.composer-shell .composer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 16px;
+}
+
+.composer-shell .composer-hint {
+  display: none;
+}
+
+.composer-shell .voice-status {
+  margin-left: auto;
+  color: #1976ff;
+  font-size: 11px;
+}
+
+/* ---------------------------------------------------------
+   ATTACHMENTS
+   --------------------------------------------------------- */
+
+.composer-shell .composer-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.composer-shell .composer-attachment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 30px 6px 6px;
+  border: 1px solid rgba(25, 118, 255, .28);
+  border-radius: 12px;
+  background: rgba(25, 118, 255, .06);
+  box-sizing: border-box;
+}
+
+.composer-shell .composer-attachment-preview {
+  display: block;
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.composer-shell .composer-attachment-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-shell .composer-attachment-size {
+  font-size: 10px;
+  opacity: .65;
+}
+
+.composer-shell .composer-attachment-remove {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  color: #1976ff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------
+   RECORDING STATE
+   ×  →  LONG ANIMATED WAVES  →  STOP
+   --------------------------------------------------------- */
+
+.composer-shell .voice-recording-controls {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.composer-shell.is-recording .voice-recording-controls {
+  display: flex;
+}
+
+.composer-shell.is-recording .composer-top {
+  display: none;
+}
+
+.composer-shell .voice-recording-cancel,
+.composer-shell .voice-record-button {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1976ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.composer-shell .voice-recording-cancel {
+  font-size: 25px;
+}
+
+.composer-shell .voice-record-button {
+  border: 2px solid #1976ff;
+  border-radius: 50%;
+}
+
+.composer-shell .voice-record-button::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #1976ff;
+}
+
+.composer-shell .voice-waves {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  overflow: hidden;
+  color: #1976ff;
+}
+
+.composer-shell .voice-waves i {
+  flex: 1 1 0;
+  min-width: 2px;
+  max-width: 5px;
+  height: 12px;
+  border-radius: 99px;
+  background: currentColor;
+  transform-origin: center;
+  animation: theoComposerLongWave .72s ease-in-out infinite alternate;
+}
+
+.composer-shell .voice-waves i:nth-child(2) { animation-delay: -.12s; }
+.composer-shell .voice-waves i:nth-child(3) { animation-delay: -.24s; }
+.composer-shell .voice-waves i:nth-child(4) { animation-delay: -.36s; }
+.composer-shell .voice-waves i:nth-child(5) { animation-delay: -.48s; }
+.composer-shell .voice-waves i:nth-child(6) { animation-delay: -.60s; }
+.composer-shell .voice-waves i:nth-child(7) { animation-delay: -.18s; }
+
+@keyframes theoComposerLongWave {
+  from {
+    height: 7px;
+    opacity: .55;
+  }
+  to {
+    height: 32px;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .composer-shell .composer-top {
+    gap: 6px;
+  }
+
+  .composer-shell .composer-tool-button,
+  .composer-shell .composer-icon-button,
+  .composer-shell .composer-aira-button,
+  .composer-shell .voice-recording-cancel,
+  .composer-shell .voice-record-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .composer-shell .voice-recording-controls {
+    gap: 5px;
+  }
+
+  .composer-shell .voice-waves {
+    gap: 2px;
+  }
 }

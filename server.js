@@ -608,11 +608,11 @@ app.post("/api/chat", async (req, res) => {
       )
       .slice(0, 4);
 
-    if (!userMessage) {
-      return res.status(400).json({
-        error: "Message is required"
-      });
-    }
+    if (!userMessage && safeAttachments.length === 0) {
+  return res.status(400).json({
+    error: "Message or attachment is required"
+  });
+}
 
     if (!userId || !conversationId) {
       return res.status(400).json({

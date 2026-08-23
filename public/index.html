@@ -171,22 +171,12 @@
 
     <!-- Input -->
     <form id="chat-form" class="input-area composer-v2">
+
   <div id="composer-attachments" class="composer-attachments" hidden></div>
 
-  <div class="composer-shell">
-    <div class="composer-top">
-      <button
-        id="composer-add-button"
-        class="composer-tool-button"
-        type="button"
-        aria-label="Add attachment or action"
-        title="Add"
-      >+</button>
+  <div class="composer-shell" id="composer-shell">
 
-      <div class="composer-identity" aria-label="Assistant identity">
-        <span class="composer-aira">Theo</span>
-        <span class="composer-aira-dot" aria-hidden="true"></span>
-      </div>
+    <div class="composer-content" id="composer-content">
 
       <textarea
         id="message-input"
@@ -196,52 +186,107 @@
         required
       ></textarea>
 
-      <button
-        id="voice-start-button"
-        type="button"
-        class="voice-compact-button"
-        aria-label="Start voice conversation"
-        title="Talk to Theo"
-      >
-        <span class="voice-symbol" aria-hidden="true">
-          <span class="voice-dot"></span>
-          <span class="voice-waves">
-            <i></i><i></i><i></i><i></i><i></i>
-          </span>
-        </span>
-      </button>
+    </div>
+
+    <div class="composer-controls" id="composer-controls">
 
       <button
-        id="voice-stop-button"
+        id="composer-add-button"
+        class="composer-icon-button"
         type="button"
-        class="voice-compact-button voice-stop-compact"
-        aria-label="End voice conversation"
-        title="End voice conversation"
-        hidden
+        aria-label="Add attachment"
+        title="Add attachment"
       >
-        <span class="voice-symbol voice-stop-symbol" aria-hidden="true">
-          <span class="voice-dot"></span>
-          <span class="voice-waves">
-            <i></i><i></i><i></i><i></i><i></i>
-          </span>
-        </span>
+        <span class="composer-line-icon composer-plus-icon" aria-hidden="true"></span>
+      </button>
+
+      <div class="composer-spacer"></div>
+
+      <button
+        id="voice-start-button"
+        class="composer-icon-button composer-mic-button"
+        type="button"
+        aria-label="Use voice"
+        title="Use voice"
+      >
+        <span class="composer-line-icon composer-mic-icon" aria-hidden="true"></span>
       </button>
 
       <button
         id="send-button"
+        class="composer-icon-button composer-send-button"
         type="submit"
         aria-label="Send message"
         title="Send message"
-      >↑</button>
+        hidden
+      >
+        <span class="composer-line-icon composer-send-icon" aria-hidden="true"></span>
+      </button>
+
+      <button
+        id="aira-button"
+        class="composer-aira-button"
+        type="button"
+        aria-label="Aira"
+        title="Aira"
+      >
+        <span class="composer-aira">Aira</span>
+        <span class="composer-aira-dot" aria-hidden="true"></span>
+      </button>
+
     </div>
 
-    <div class="composer-bottom">
-      <span class="composer-hint">Theo is ready</span>
-      <span id="voice-status" class="voice-status" aria-live="polite"></span>
+    <div
+      id="voice-recording-controls"
+      class="voice-recording-controls"
+      hidden
+      aria-live="polite"
+    >
+
+      <button
+        id="voice-cancel-button"
+        class="voice-recording-cancel"
+        type="button"
+        aria-label="Cancel voice recording"
+        title="Cancel"
+      >×</button>
+
+      <div
+        id="voice-waves"
+        class="voice-waves"
+        aria-hidden="true"
+      >
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+
+      <button
+        id="voice-record-button"
+        class="voice-record-button"
+        type="button"
+        aria-label="Stop voice recording"
+        title="Stop recording"
+      >
+        <span class="voice-record-lines" aria-hidden="true"></span>
+      </button>
+
     </div>
+
+    <div
+      id="voice-status"
+      class="voice-status"
+      aria-live="polite"
+    ></div>
+
   </div>
 
-  <input id="composer-file-input" type="file" hidden multiple>
+  <input
+    id="composer-file-input"
+    type="file"
+    hidden
+    multiple
+    accept="image/jpeg,image/png,image/webp,image/gif"
+  >
+
 </form>
 
 </main>
