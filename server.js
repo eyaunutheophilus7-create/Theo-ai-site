@@ -581,6 +581,33 @@ app.post("/api/chat", async (req, res) => {
       req.body.conversationId || ""
     ).trim();
 
+    const attachments = Array.isArray(req.body.attachments)
+      ? req.body.attachments
+      : [];
+
+    const allowedAttachmentTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif"
+    ]);
+
+    const MAX_ATTACHMENT_BASE64_LENGTH = 7_000_000;
+
+    const safeAttachments = attachments
+      .filter(
+        (attachment) =>
+          attachment &&
+          typeof attachment.data === "string" &&
+          typeof attachment.mimeType === "string" &&
+          allowedAttachmentTypes.has(
+            attachment.mimeType.toLowerCase()
+          ) &&
+          attachment.data.length <=
+            MAX_ATTACHMENT_BASE64_LENGTH
+      )
+      .slice(0, 4);
+
     if (!userMessage) {
       return res.status(400).json({
         error: "Message is required"
@@ -723,6 +750,19 @@ END RECALL CONTEXT.
     const routeInfo = getModelForMessage(userMessage);
     const modelsToTry = getFallbackModels(routeInfo.route);
 
+    const userContent = [
+      {
+        type: "text",
+        text: userMessage
+      },
+      ...safeAttachments.map((attachment) => ({
+        type: "image_url",
+        image_url: {
+          url: `data:${attachment.mimeType};base64,${attachment.data}`
+        }
+      }))
+    ];
+
     let response = null;
     let selectedModel = null;
     let lastModelError = null;
@@ -748,7 +788,7 @@ END RECALL CONTEXT.
             ...safeHistory,
             {
               role: "user",
-              content: userMessage
+              content: userContent
             }
           ]
         });

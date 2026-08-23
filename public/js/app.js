@@ -442,6 +442,8 @@ async function sendMessageToTheo(message) {
     return;
   }
 
+  const attachments = await getComposerAttachments();
+
   lastUserMessage = message;
 
   addMessage(
@@ -479,7 +481,8 @@ async function sendMessageToTheo(message) {
             history:
               conversationHistory,
             userId,
-            conversationId
+            conversationId,
+            attachments
           })
         }
       );
@@ -527,6 +530,16 @@ async function sendMessageToTheo(message) {
       conversationHistory.slice(-20);
 
     await loadConversations();
+
+    composerSelectedFiles.length = 0;
+
+    const attachmentArea =
+      document.getElementById("composer-attachments");
+
+    if (attachmentArea) {
+      attachmentArea.innerHTML = "";
+      attachmentArea.hidden = true;
+    }
 
   } catch (error) {
     thinking.remove();
@@ -2228,3 +2241,186 @@ initializeUser().catch(
   );
 })();
 
+
+/* =========================================================
+   THEO COMPOSER V2 — TEXTAREA BEHAVIOR
+   ========================================================= */
+
+(function initializeComposerV2Textarea() {
+  const composerInput = document.getElementById("message-input");
+
+  if (!composerInput) {
+    return;
+  }
+
+  function resizeComposerInput() {
+    composerInput.style.height = "auto";
+    composerInput.style.height =
+      Math.min(composerInput.scrollHeight, 180) + "px";
+  }
+
+  composerInput.addEventListener("input", resizeComposerInput);
+
+  composerInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    if (event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (form && !sendButton.disabled) {
+      form.requestSubmit();
+    }
+  });
+
+  resizeComposerInput();
+})();
+
+/* =========================================================
+   THEO COMPOSER V2 — ATTACHMENT DATA
+   ========================================================= */
+
+let composerSelectedFiles = [];
+
+async function getComposerAttachments() {
+  const fileInput =
+    document.getElementById("composer-file-input");
+
+  if (!fileInput) {
+    return [];
+  }
+
+  const files =
+    composerSelectedFiles.slice();
+
+  return Promise.all(
+    files.map(
+      file =>
+        new Promise((resolve, reject) => {
+          const reader =
+            new FileReader();
+
+          reader.onload = () => {
+            const result =
+              String(reader.result || "");
+
+            const comma =
+              result.indexOf(",");
+
+            resolve({
+              name: file.name,
+              mimeType:
+                file.type || "application/octet-stream",
+              data:
+                comma >= 0
+                  ? result.slice(comma + 1)
+                  : result
+            });
+          };
+
+          reader.onerror =
+            () => reject(
+              new Error(
+                `Could not read ${file.name}`
+              )
+            );
+
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+}
+
+
+/* =========================================================
+   THEO COMPOSER V2 — DEVICE ATTACHMENTS
+   ========================================================= */
+
+(function initializeComposerV2Attachments() {
+  const addButton = document.getElementById("composer-add-button");
+  const fileInput = document.getElementById("composer-file-input");
+  const attachmentArea = document.getElementById("composer-attachments");
+
+  if (!addButton || !fileInput || !attachmentArea) {
+    return;
+  }
+
+  const selectedFiles = composerSelectedFiles;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${Math.round(bytes / 1024)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function renderAttachments() {
+    attachmentArea.innerHTML = "";
+
+    if (selectedFiles.length === 0) {
+      attachmentArea.hidden = true;
+      return;
+    }
+
+    attachmentArea.hidden = false;
+
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement("div");
+      item.className = "composer-attachment";
+
+      const name = document.createElement("span");
+      name.className = "composer-attachment-name";
+      name.textContent = file.name;
+
+      const size = document.createElement("span");
+      size.className = "composer-attachment-size";
+      size.textContent = formatFileSize(file.size);
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "composer-attachment-remove";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `Remove ${file.name}`);
+      remove.addEventListener("click", () => {
+        selectedFiles.splice(index, 1);
+        renderAttachments();
+      });
+
+      item.append(name, size, remove);
+      attachmentArea.appendChild(item);
+    });
+  }
+
+  addButton.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", () => {
+    const incoming = Array.from(fileInput.files || []);
+
+    for (const file of incoming) {
+      const alreadySelected = selectedFiles.some(
+        selected =>
+          selected.name === file.name &&
+          selected.size === file.size &&
+          selected.lastModified === file.lastModified
+      );
+
+      if (!alreadySelected) {
+        selectedFiles.push(file);
+      }
+    }
+
+    fileInput.value = "";
+    renderAttachments();
+  });
+})();
