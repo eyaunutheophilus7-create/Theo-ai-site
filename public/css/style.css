@@ -1119,7 +1119,7 @@ body.history-open {
 }
 
 /* =========================================================
-   THEO COMPOSER V2 — CLEAN DESIGN
+   THEO COMPOSER V2 — AUTHORITATIVE DESIGN
    ========================================================= */
 
 .composer-v2 {
@@ -1133,20 +1133,20 @@ body.history-open {
   position: relative;
   width: 100%;
   min-height: 58px;
-  border: 1px solid rgba(120, 140, 180, 0.28);
+  border: 1px solid rgba(25, 118, 255, .22);
   border-radius: 20px;
-  background: rgba(16, 22, 38, 0.96);
+  background: rgba(16, 22, 38, .96);
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .composer-content {
   width: 100%;
-  padding: 14px 16px 4px;
+  padding: 13px 16px 3px;
   box-sizing: border-box;
 }
 
-#message-input {
+.composer-v2 #message-input {
   width: 100%;
   min-height: 24px;
   max-height: 180px;
@@ -1163,28 +1163,30 @@ body.history-open {
   box-sizing: border-box;
 }
 
-#message-input::placeholder {
-  opacity: 0.55;
+.composer-v2 #message-input::placeholder {
+  opacity: .55;
 }
+
+/* NORMAL CONTROLS */
 
 .composer-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 46px;
-  padding: 6px 10px 10px;
+  padding: 5px 9px 9px;
   box-sizing: border-box;
 }
 
 .composer-spacer {
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .composer-icon-button,
 .composer-aira-button {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1193,20 +1195,26 @@ body.history-open {
   padding: 0;
   margin: 0;
   cursor: pointer;
-  color: #3b82f6;
+  color: #1976ff;
+  box-sizing: border-box;
 }
 
 .composer-icon-button:active,
 .composer-aira-button:active {
-  transform: scale(0.94);
+  transform: scale(.94);
 }
+
+/* PLUS */
 
 .composer-line-icon {
   position: relative;
   display: block;
-  width: 24px;
-  height: 24px;
   box-sizing: border-box;
+}
+
+.composer-plus-icon {
+  width: 25px;
+  height: 25px;
 }
 
 .composer-plus-icon::before,
@@ -1218,20 +1226,22 @@ body.history-open {
   width: 18px;
   height: 2px;
   background: currentColor;
-  transform: translate(-50%, -50%);
   border-radius: 2px;
+  transform: translate(-50%, -50%);
 }
 
 .composer-plus-icon::after {
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
+/* MICROPHONE */
+
 .composer-mic-icon {
-  width: 20px;
+  position: relative;
+  width: 19px;
   height: 24px;
   border: 2px solid currentColor;
   border-radius: 10px;
-  box-sizing: border-box;
 }
 
 .composer-mic-icon::before {
@@ -1259,58 +1269,80 @@ body.history-open {
   transform: translateX(-50%);
 }
 
-.composer-send-icon {
-  width: 22px;
-  height: 24px;
-}
+/* SEND */
 
-.composer-send-icon::before,
-.composer-send-icon::after {
-  content: "";
-  position: absolute;
-  background: currentColor;
-  height: 2px;
-  border-radius: 2px;
-  transform-origin: right center;
+.composer-send-icon {
+  position: relative;
+  width: 25px;
+  height: 25px;
 }
 
 .composer-send-icon::before {
+  content: "";
+  position: absolute;
   width: 18px;
-  right: 2px;
-  top: 7px;
-  transform: rotate(-42deg);
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
 }
 
 .composer-send-icon::after {
-  width: 18px;
-  right: 2px;
-  bottom: 7px;
-  transform: rotate(42deg);
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  left: 2px;
+  top: 11px;
+  background: currentColor;
+  border-radius: 2px;
+  transform: rotate(-45deg);
 }
 
-.composer-send-button {
-  color: #3b82f6;
-}
+/* AIRA */
 
 .composer-aira-button {
   width: auto;
-  min-width: 44px;
-  gap: 5px;
-  color: #3b82f6;
+  min-width: 48px;
+  gap: 4px;
 }
 
 .composer-aira {
-  font-size: 13px;
+  color: #1976ff;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  line-height: 1;
 }
 
 .composer-aira-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
+  margin-left: 1px;
   border-radius: 50%;
-  background: currentColor;
+  background: #1976ff;
 }
+
+/* CONTENT STATE */
+
+.composer-v2 .composer-send-button {
+  display: none;
+}
+
+.composer-v2 .composer-aira-button {
+  display: inline-flex;
+}
+
+.composer-shell.has-content .composer-send-button {
+  display: inline-flex;
+}
+
+.composer-shell.has-content .composer-aira-button {
+  display: none;
+}
+
+/* ATTACHMENTS */
 
 .composer-attachments {
   display: flex;
@@ -1327,8 +1359,8 @@ body.history-open {
   gap: 7px;
   padding: 6px 8px;
   border-radius: 12px;
-  background: rgba(70, 90, 130, 0.18);
-  border: 1px solid rgba(120, 140, 180, 0.22);
+  background: rgba(70, 90, 130, .18);
+  border: 1px solid rgba(120, 140, 180, .22);
   max-width: 100%;
 }
 
@@ -1349,7 +1381,7 @@ body.history-open {
 }
 
 .composer-attachment-size {
-  opacity: 0.6;
+  opacity: .6;
   font-size: 11px;
 }
 
@@ -1363,381 +1395,54 @@ body.history-open {
   font-size: 18px;
 }
 
-.voice-recording-controls {
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 8px 14px;
-  color: #3b82f6;
-  box-sizing: border-box;
-}
-
-.voice-recording-cancel,
-.voice-record-button {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: #3b82f6;
-  cursor: pointer;
-}
-
-.voice-recording-cancel {
-  font-size: 30px;
-  line-height: 1;
-}
-
-.voice-waves {
-  flex: 1;
-  max-width: 180px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.voice-waves i {
-  width: 2px;
-  height: 12px;
-  background: currentColor;
-  border-radius: 2px;
-  animation: theoVoiceWave 0.85s ease-in-out infinite alternate;
-}
-
-.voice-waves i:nth-child(2) { animation-delay: -0.2s; }
-.voice-waves i:nth-child(3) { animation-delay: -0.4s; }
-.voice-waves i:nth-child(4) { animation-delay: -0.1s; }
-.voice-waves i:nth-child(5) { animation-delay: -0.3s; }
-.voice-waves i:nth-child(6) { animation-delay: -0.5s; }
-.voice-waves i:nth-child(7) { animation-delay: -0.25s; }
-
-@keyframes theoVoiceWave {
-  from { height: 7px; }
-  to { height: 28px; }
-}
-
-.voice-record-lines {
-  position: relative;
-  width: 20px;
-  height: 20px;
-}
-
-.voice-record-lines::before,
-.voice-record-lines::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  width: 2px;
-  height: 12px;
-  background: currentColor;
-  border-radius: 2px;
-}
-
-.voice-record-lines::before {
-  left: 6px;
-}
-
-.voice-record-lines::after {
-  right: 6px;
-}
-
-.voice-status {
-  min-height: 0;
-  padding: 0 14px 5px;
-  font-size: 11px;
-  opacity: 0.65;
-}
-
-.composer-v2.is-recording .composer-content,
-.composer-v2.is-recording .composer-controls,
-.composer-v2.is-recording .voice-status {
-  display: none;
-}
-
-.composer-v2.has-content .composer-content {
-  padding-bottom: 0;
-}
-
-.composer-v2.has-content .composer-aira-button {
-  display: none;
-}
-
-.composer-v2:not(.has-content) .composer-send-button {
-  display: none;
-}
-
-.composer-v2.is-recording .voice-recording-controls {
-  display: flex;
-}
-
-@media (max-width: 520px) {
-  .composer-v2 {
-    padding: 8px;
-  }
-
-  .composer-shell {
-    border-radius: 18px;
-  }
-
-  .composer-controls {
-    min-height: 44px;
-  }
-
-  .composer-icon-button {
-    width: 36px;
-    height: 36px;
-    flex-basis: 36px;
-  }
-}
 /* =========================================================
-   THEO COMPOSER V2 — AUTHORITATIVE DESIGN
-   ========================================================= */
-
-/* =========================================================
-   THEO COMPOSER V2 — AUTHORITATIVE DESIGN
-   ========================================================= */
-
-.composer-v2 {
-  width: 100%;
-}
-
-.composer-shell .composer-v2 {
-  position: relative;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.composer-shell .composer-top {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  width: 100%;
-}
-
-.composer-v2 #message-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  resize: none;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
-.composer-shell .composer-tool-button,
-.composer-shell .composer-icon-button,
-.composer-shell .composer-aira-button {
-  flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  color: #1976ff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-
-.composer-shell .composer-tool-button {
-  font-size: 28px;
-  line-height: 1;
-}
-
-.composer-shell .composer-mic-icon,
-.composer-shell .composer-send-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 25px;
-  height: 25px;
-  color: #1976ff;
-}
-
-.composer-shell .composer-mic-icon svg,
-.composer-shell .composer-send-icon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.composer-shell .composer-send-button {
-  display: none;
-}
-
-.composer-shell.has-content .composer-send-button {
-  display: inline-flex;
-}
-
-.composer-shell.has-content .composer-aira-button {
-  display: none;
-}
-
-.composer-shell:not(.has-content) .composer-send-button {
-  display: none;
-}
-
-.composer-shell:not(.has-content) .composer-aira-button {
-  display: inline-flex;
-}
-
-.composer-shell .composer-aira {
-  color: #1976ff;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.composer-shell .composer-aira-dot {
-  width: 5px;
-  height: 5px;
-  margin-left: 3px;
-  border-radius: 50%;
-  background: #1976ff;
-}
-
-.composer-shell .composer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 16px;
-}
-
-.composer-shell .composer-hint {
-  display: none;
-}
-
-.composer-shell .voice-status {
-  margin-left: auto;
-  color: #1976ff;
-  font-size: 11px;
-}
-
-/* ---------------------------------------------------------
-   ATTACHMENTS
-   --------------------------------------------------------- */
-
-.composer-shell .composer-attachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.composer-shell .composer-attachment {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 6px 30px 6px 6px;
-  border: 1px solid rgba(25, 118, 255, .28);
-  border-radius: 12px;
-  background: rgba(25, 118, 255, .06);
-  box-sizing: border-box;
-}
-
-.composer-shell .composer-attachment-preview {
-  display: block;
-  width: 52px;
-  height: 52px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.composer-shell .composer-attachment-name {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.composer-shell .composer-attachment-size {
-  font-size: 10px;
-  opacity: .65;
-}
-
-.composer-shell .composer-attachment-remove {
-  position: absolute;
-  top: 4px;
-  right: 5px;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  background: transparent;
-  color: #1976ff;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-/* ---------------------------------------------------------
-   RECORDING STATE
+   VOICE RECORDING
    ×  →  LONG ANIMATED WAVES  →  STOP
-   --------------------------------------------------------- */
+   ========================================================= */
 
-.composer-shell .voice-recording-controls {
+.composer-v2 .voice-recording-controls {
   display: none;
   width: 100%;
+  min-height: 58px;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 18px;
+  padding: 8px 14px;
+  color: #1976ff;
   box-sizing: border-box;
+}
+
+.composer-shell.is-recording .composer-content,
+.composer-shell.is-recording .composer-controls,
+.composer-shell.is-recording .voice-status {
+  display: none;
 }
 
 .composer-shell.is-recording .voice-recording-controls {
   display: flex;
 }
 
-.composer-shell.is-recording .composer-top {
-  display: none;
-}
+/* CANCEL */
 
-.composer-shell .voice-recording-cancel,
-.composer-shell .voice-record-button {
-  flex: 0 0 42px;
+.composer-v2 .voice-recording-cancel {
   width: 42px;
   height: 42px;
-  border: 0;
-  padding: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: #1976ff;
+  flex: 0 0 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #1976ff;
+  padding: 0;
   cursor: pointer;
+  font-size: 30px;
+  line-height: 1;
 }
 
-.composer-shell .voice-recording-cancel {
-  font-size: 25px;
-}
+/* WAVES */
 
-.composer-shell .voice-record-button {
-  border: 2px solid #1976ff;
-  border-radius: 50%;
-}
-
-.composer-shell .voice-record-button::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: #1976ff;
-}
-
-.composer-shell .voice-waves {
+.composer-v2 .voice-waves {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
@@ -1751,7 +1456,7 @@ body.history-open {
   color: #1976ff;
 }
 
-.composer-shell .voice-waves i {
+.composer-v2 .voice-waves i {
   flex: 1 1 0;
   min-width: 2px;
   max-width: 5px;
@@ -1762,12 +1467,13 @@ body.history-open {
   animation: theoComposerLongWave .72s ease-in-out infinite alternate;
 }
 
-.composer-shell .voice-waves i:nth-child(2) { animation-delay: -.12s; }
-.composer-shell .voice-waves i:nth-child(3) { animation-delay: -.24s; }
-.composer-shell .voice-waves i:nth-child(4) { animation-delay: -.36s; }
-.composer-shell .voice-waves i:nth-child(5) { animation-delay: -.48s; }
-.composer-shell .voice-waves i:nth-child(6) { animation-delay: -.60s; }
-.composer-shell .voice-waves i:nth-child(7) { animation-delay: -.18s; }
+.composer-v2 .voice-waves i:nth-child(1) { animation-delay: -.06s; }
+.composer-v2 .voice-waves i:nth-child(2) { animation-delay: -.12s; }
+.composer-v2 .voice-waves i:nth-child(3) { animation-delay: -.24s; }
+.composer-v2 .voice-waves i:nth-child(4) { animation-delay: -.36s; }
+.composer-v2 .voice-waves i:nth-child(5) { animation-delay: -.48s; }
+.composer-v2 .voice-waves i:nth-child(6) { animation-delay: -.60s; }
+.composer-v2 .voice-waves i:nth-child(7) { animation-delay: -.18s; }
 
 @keyframes theoComposerLongWave {
   from {
@@ -1780,25 +1486,82 @@ body.history-open {
   }
 }
 
+/* STOP BUTTON */
+
+.composer-v2 .voice-record-button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1976ff;
+  border-radius: 50%;
+  background: transparent;
+  color: #1976ff;
+  padding: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.composer-v2 .voice-record-button::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: #1976ff;
+}
+
+/* RECORDING LINES */
+
+.composer-v2 .voice-record-lines {
+  display: none;
+}
+
+/* STATUS */
+
+.composer-v2 .voice-status {
+  min-height: 0;
+  padding: 0 14px 5px;
+  font-size: 11px;
+  opacity: .65;
+}
+
+/* MOBILE */
+
 @media (max-width: 480px) {
-  .composer-shell .composer-top {
+  .composer-v2 {
+    padding: 8px;
+  }
+
+  .composer-shell {
+    border-radius: 18px;
+  }
+
+  .composer-controls {
+    min-height: 44px;
     gap: 6px;
   }
 
-  .composer-shell .composer-tool-button,
-  .composer-shell .composer-icon-button,
-  .composer-shell .composer-aira-button,
-  .composer-shell .voice-recording-cancel,
-  .composer-shell .voice-record-button {
+  .composer-icon-button,
+  .composer-aira-button,
+  .composer-v2 .voice-recording-cancel,
+  .composer-v2 .voice-record-button {
     width: 38px;
     height: 38px;
+    flex-basis: 38px;
   }
 
-  .composer-shell .voice-recording-controls {
-    gap: 5px;
+  .composer-aira-button {
+    width: auto;
+    flex-basis: auto;
   }
 
-  .composer-shell .voice-waves {
+  .composer-v2 .voice-recording-controls {
+    gap: 8px;
+  }
+
+  .composer-v2 .voice-waves {
     gap: 2px;
   }
 }
