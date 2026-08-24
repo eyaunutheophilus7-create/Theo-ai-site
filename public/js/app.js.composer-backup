@@ -438,14 +438,11 @@ historyNewChatButton.addEventListener(
 async function sendMessageToTheo(message) {
   message = message.trim();
 
-  const attachments =
-    typeof window.getComposerAttachments === "function"
-      ? await window.getComposerAttachments()
-      : [];
-
-  if (!message && attachments.length === 0) {
+  if (!message) {
     return;
   }
+
+  const attachments = await getComposerAttachments();
 
   lastUserMessage = message;
 
@@ -534,9 +531,7 @@ async function sendMessageToTheo(message) {
 
     await loadConversations();
 
-    if (Array.isArray(window.composerSelectedFiles)) {
-      window.composerSelectedFiles.length = 0;
-    }
+    composerSelectedFiles.length = 0;
 
     const attachmentArea =
       document.getElementById("composer-attachments");
@@ -574,10 +569,7 @@ form.addEventListener(
     const message =
       input.value.trim();
 
-    const attachments =
-      await getComposerAttachments();
-
-    if (!message && attachments.length === 0) {
+    if (!message) {
       return;
     }
 
@@ -2147,26 +2139,9 @@ initializeUser().catch(
                     completeTranscript
                   );
 
-                  const composerInput =
-                    document.getElementById("message-input");
-
-                  if (composerInput) {
-                    composerInput.value =
-                      composerInput.value
-                        ? `${composerInput.value} ${completeTranscript}`.trim()
-                        : completeTranscript;
-
-                    composerInput.dispatchEvent(
-                      new Event("input", { bubbles: true })
-                    );
-
-                    composerInput.focus();
-
-                    console.log(
-                      "Theo Live transcript placed in composer:",
-                      completeTranscript
-                    );
-                  }
+                  await sendMessageToTheo(
+                    completeTranscript
+                  );
                 }
               }
 
@@ -2268,167 +2243,113 @@ initializeUser().catch(
 
 
 /* =========================================================
-   THEO UNIFIED COMPOSER V3
-   =========================================================
-   ONE attachment store
-   ONE composer state engine
-   ONE send flow
-   ONE recording flow
-   Voice transcription returns to composer
+   THEO COMPOSER V2 — TEXTAREA BEHAVIOR
    ========================================================= */
 
-(() => {
-  "use strict";
+(function initializeComposerV2Textarea() {
+  const composerInput = document.getElementById("message-input");
 
-  const form =
-    document.getElementById("chat-form");
-
-  const shell =
-    document.getElementById("composer-shell");
-
-  const content =
-    document.getElementById("composer-content");
-
-  const input =
-    document.getElementById("message-input");
-
-  const addButton =
-    document.getElementById("composer-add-button");
-
-  const fileInput =
-    document.getElementById("composer-file-input");
-
-  const attachmentArea =
-    document.getElementById("composer-attachments");
-
-  const voiceStartButton =
-    document.getElementById("voice-start-button");
-
-  const sendButton =
-    document.getElementById("send-button");
-
-  const airaButton =
-    document.getElementById("aira-button");
-
-  const recordingControls =
-    document.getElementById(
-      "voice-recording-controls"
-    );
-
-  const cancelVoiceButton =
-    document.getElementById(
-      "voice-cancel-button"
-    );
-
-  const recordVoiceButton =
-    document.getElementById(
-      "voice-record-button"
-    );
-
-  const voiceStatus =
-    document.getElementById("voice-status");
-
-  if (
-    !form ||
-    !shell ||
-    !content ||
-    !input ||
-    !addButton ||
-    !fileInput ||
-    !attachmentArea ||
-    !voiceStartButton ||
-    !sendButton ||
-    !airaButton ||
-    !recordingControls
-  ) {
-    console.warn(
-      "Theo Unified Composer: required elements missing."
-    );
+  if (!composerInput) {
     return;
   }
 
-  /* =======================================================
-     SINGLE ATTACHMENT STORE
-     ======================================================= */
-
-  window.composerSelectedFiles =
-    window.composerSelectedFiles || [];
-
-  const selectedFiles =
-    window.composerSelectedFiles;
-
-  /* =======================================================
-     REMOVE OLD CLICK LISTENERS
-     ======================================================= */
-
-  function isolateButton(button) {
-    if (!button) return null;
-
-    const clone =
-      button.cloneNode(true);
-
-    button.replaceWith(clone);
-
-    return clone;
+  function resizeComposerInput() {
+    composerInput.style.height = "auto";
+    composerInput.style.height =
+      Math.min(composerInput.scrollHeight, 180) + "px";
   }
 
-  const cleanAddButton =
-    isolateButton(addButton);
+  composerInput.addEventListener("input", resizeComposerInput);
 
-  const cleanVoiceStartButton =
-    isolateButton(voiceStartButton);
+  composerInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") {
+      return;
+    }
 
-  const cleanSendButton =
-    isolateButton(sendButton);
+    if (event.shiftKey) {
+      return;
+    }
 
-  const cleanAiraButton =
-    isolateButton(airaButton);
+    event.preventDefault();
 
-  const cleanCancelVoiceButton =
-    isolateButton(cancelVoiceButton);
+    if (form && !sendButton.disabled) {
+      form.requestSubmit();
+    }
+  });
 
-  const cleanRecordVoiceButton =
-    isolateButton(recordVoiceButton);
+  resizeComposerInput();
+})();
 
-  /* =======================================================
-     STATE
-     ======================================================= */
+/* =========================================================
+   THEO COMPOSER V2 — ATTACHMENT DATA
+   ========================================================= */
 
-  let recording = false;
-  let mediaRecorder = null;
-  let recordedChunks = [];
+let composerSelectedFiles = [];
 
-  let previousContent = "";
-  let previousFiles = [];
+async function getComposerAttachments() {
+  const fileInput =
+    document.getElementById("composer-file-input");
 
-  /* =======================================================
-     CONTENT CHECK
-     ======================================================= */
-
-  function hasContent() {
-    return (
-      input.value.trim().length > 0 ||
-      selectedFiles.length > 0
-    );
+  if (!fileInput) {
+    return [];
   }
 
-  /* =======================================================
-     INPUT RESIZE
-     ======================================================= */
+  const files =
+    composerSelectedFiles.slice();
 
-  function resizeInput() {
-    input.style.height = "auto";
+  return Promise.all(
+    files.map(
+      file =>
+        new Promise((resolve, reject) => {
+          const reader =
+            new FileReader();
 
-    input.style.height =
-      Math.min(
-        input.scrollHeight,
-        180
-      ) + "px";
+          reader.onload = () => {
+            const result =
+              String(reader.result || "");
+
+            const comma =
+              result.indexOf(",");
+
+            resolve({
+              name: file.name,
+              mimeType:
+                file.type || "application/octet-stream",
+              data:
+                comma >= 0
+                  ? result.slice(comma + 1)
+                  : result
+            });
+          };
+
+          reader.onerror =
+            () => reject(
+              new Error(
+                `Could not read ${file.name}`
+              )
+            );
+
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+}
+
+
+/* =========================================================
+   THEO COMPOSER V2 — DEVICE ATTACHMENTS
+   ========================================================= */
+
+(function initializeComposerV2Attachments() {
+  const addButton = document.getElementById("composer-add-button");
+  const fileInput = document.getElementById("composer-file-input");
+  const attachmentArea = document.getElementById("composer-attachments");
+
+  if (!addButton || !fileInput || !attachmentArea) {
+    return;
   }
 
-  /* =======================================================
-     FILE SIZE
-     ======================================================= */
+  const selectedFiles = composerSelectedFiles;
 
   function formatFileSize(bytes) {
     if (bytes < 1024) {
@@ -2439,15 +2360,8 @@ initializeUser().catch(
       return `${Math.round(bytes / 1024)} KB`;
     }
 
-    return `${(
-      bytes /
-      (1024 * 1024)
-    ).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
-
-  /* =======================================================
-     RENDER ATTACHMENTS
-     ======================================================= */
 
   function renderAttachments() {
     attachmentArea.innerHTML = "";
@@ -2459,656 +2373,54 @@ initializeUser().catch(
 
     attachmentArea.hidden = false;
 
-    selectedFiles
-      .slice(0, 4)
-      .forEach((file, index) => {
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement("div");
+      item.className = "composer-attachment";
 
-        const item =
-          document.createElement("div");
+      const name = document.createElement("span");
+      name.className = "composer-attachment-name";
+      name.textContent = file.name;
 
-        item.className =
-          "composer-attachment";
+      const size = document.createElement("span");
+      size.className = "composer-attachment-size";
+      size.textContent = formatFileSize(file.size);
 
-        if (
-          file.type &&
-          file.type.startsWith("image/")
-        ) {
-          const preview =
-            document.createElement("img");
-
-          preview.className =
-            "composer-attachment-preview";
-
-          preview.alt =
-            file.name;
-
-          preview.src =
-            URL.createObjectURL(file);
-
-          item.appendChild(preview);
-        }
-
-        const info =
-          document.createElement("div");
-
-        info.className =
-          "composer-attachment-info";
-
-        const name =
-          document.createElement("div");
-
-        name.className =
-          "composer-attachment-name";
-
-        name.textContent =
-          file.name;
-
-        const size =
-          document.createElement("div");
-
-        size.className =
-          "composer-attachment-size";
-
-        size.textContent =
-          formatFileSize(file.size);
-
-        info.append(
-          name,
-          size
-        );
-
-        const remove =
-          document.createElement("button");
-
-        remove.type =
-          "button";
-
-        remove.className =
-          "composer-attachment-remove";
-
-        remove.textContent =
-          "×";
-
-        remove.setAttribute(
-          "aria-label",
-          `Remove ${file.name}`
-        );
-
-        remove.addEventListener(
-          "click",
-          () => {
-            selectedFiles.splice(
-              index,
-              1
-            );
-
-            renderAttachments();
-            setComposerState();
-          }
-        );
-
-        item.append(
-          info,
-          remove
-        );
-
-        attachmentArea.appendChild(
-          item
-        );
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "composer-attachment-remove";
+      remove.textContent = "×";
+      remove.setAttribute("aria-label", `Remove ${file.name}`);
+      remove.addEventListener("click", () => {
+        selectedFiles.splice(index, 1);
+        renderAttachments();
       });
+
+      item.append(name, size, remove);
+      attachmentArea.appendChild(item);
+    });
   }
 
-  /* =======================================================
-     READ FILE
-     ======================================================= */
+  addButton.addEventListener("click", () => {
+    fileInput.click();
+  });
 
-  function readFileAsAttachment(file) {
-    return new Promise(
-      (resolve, reject) => {
+  fileInput.addEventListener("change", () => {
+    const incoming = Array.from(fileInput.files || []);
 
-        const reader =
-          new FileReader();
-
-        reader.onload = () => {
-
-          const result =
-            String(
-              reader.result || ""
-            );
-
-          const comma =
-            result.indexOf(",");
-
-          resolve({
-            name: file.name,
-
-            mimeType:
-              file.type ||
-              "application/octet-stream",
-
-            data:
-              comma >= 0
-                ? result.slice(
-                    comma + 1
-                  )
-                : result
-          });
-        };
-
-        reader.onerror = () => {
-          reject(
-            new Error(
-              `Could not read ${file.name}`
-            )
-          );
-        };
-
-        reader.readAsDataURL(file);
-      }
-    );
-  }
-
-  /* =======================================================
-     ONLY ATTACHMENT API
-     ======================================================= */
-
-  window.getComposerAttachments =
-    async function () {
-
-      return Promise.all(
-        selectedFiles
-          .slice(0, 4)
-          .map(
-            readFileAsAttachment
-          )
-      );
-    };
-
-  /* =======================================================
-     ADD ATTACHMENT
-     ======================================================= */
-
-  cleanAddButton.addEventListener(
-    "click",
-    () => {
-      fileInput.click();
-    }
-  );
-
-  fileInput.addEventListener(
-    "change",
-    () => {
-
-      const incoming =
-        Array.from(
-          fileInput.files || []
-        );
-
-      for (const file of incoming) {
-
-        if (
-          selectedFiles.length >= 4
-        ) {
-          break;
-        }
-
-        const duplicate =
-          selectedFiles.some(
-            existing =>
-              existing.name ===
-                file.name &&
-              existing.size ===
-                file.size &&
-              existing.lastModified ===
-                file.lastModified
-          );
-
-        if (!duplicate) {
-          selectedFiles.push(
-            file
-          );
-        }
-      }
-
-      fileInput.value = "";
-
-      renderAttachments();
-      setComposerState();
-    }
-  );
-
-  /* =======================================================
-     COMPOSER STATE
-     ======================================================= */
-
-  function setComposerState() {
-
-    if (recording) {
-
-      shell.classList.add(
-        "is-recording"
+    for (const file of incoming) {
+      const alreadySelected = selectedFiles.some(
+        selected =>
+          selected.name === file.name &&
+          selected.size === file.size &&
+          selected.lastModified === file.lastModified
       );
 
-      shell.classList.remove(
-        "has-content"
-      );
-
-      recordingControls.hidden =
-        false;
-
-      cleanVoiceStartButton.hidden =
-        true;
-
-      cleanSendButton.hidden =
-        true;
-
-      cleanAiraButton.hidden =
-        true;
-
-      cleanAddButton.hidden =
-        true;
-
-      return;
-    }
-
-    shell.classList.remove(
-      "is-recording"
-    );
-
-    const populated =
-      hasContent();
-
-    if (populated) {
-
-      shell.classList.add(
-        "has-content"
-      );
-
-      cleanAiraButton.hidden =
-        true;
-
-      cleanSendButton.hidden =
-        false;
-
-    } else {
-
-      shell.classList.remove(
-        "has-content"
-      );
-
-      cleanAiraButton.hidden =
-        false;
-
-      cleanSendButton.hidden =
-        true;
-    }
-
-    cleanAddButton.hidden =
-      false;
-
-    cleanVoiceStartButton.hidden =
-      false;
-
-    recordingControls.hidden =
-      true;
-  }
-
-  /* =======================================================
-     TEXT INPUT
-     ======================================================= */
-
-  input.addEventListener(
-    "input",
-    () => {
-      resizeInput();
-      setComposerState();
-    }
-  );
-
-  /* =======================================================
-     ENTER TO SEND
-     SHIFT + ENTER = NEW LINE
-     ======================================================= */
-
-  input.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key !== "Enter"
-      ) {
-        return;
-      }
-
-      if (
-        event.shiftKey
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (
-        !hasContent()
-      ) {
-        return;
-      }
-
-      if (
-        typeof form.requestSubmit ===
-        "function"
-      ) {
-        form.requestSubmit();
+      if (!alreadySelected) {
+        selectedFiles.push(file);
       }
     }
-  );
 
-  /* =======================================================
-     VOICE RECORDING
-     ======================================================= */
-
-  async function startVoiceRecording() {
-
-    if (recording) {
-      return;
-    }
-
-    if (
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ) {
-
-      voiceStatus.textContent =
-        "Microphone access is not available on this device.";
-
-      return;
-    }
-
-    try {
-
-      previousContent =
-        input.value;
-
-      previousFiles =
-        selectedFiles.slice();
-
-      const stream =
-        await navigator.mediaDevices
-          .getUserMedia({
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true
-            }
-          });
-
-      recordedChunks = [];
-
-      let options = {};
-
-      if (
-        MediaRecorder.isTypeSupported(
-          "audio/webm;codecs=opus"
-        )
-      ) {
-        options.mimeType =
-          "audio/webm;codecs=opus";
-      }
-
-      mediaRecorder =
-        new MediaRecorder(
-          stream,
-          options
-        );
-
-      mediaRecorder.ondataavailable =
-        event => {
-
-          if (
-            event.data &&
-            event.data.size > 0
-          ) {
-            recordedChunks.push(
-              event.data
-            );
-          }
-        };
-
-      mediaRecorder.onstop =
-        async () => {
-
-          stream
-            .getTracks()
-            .forEach(
-              track =>
-                track.stop()
-            );
-
-          voiceStatus.textContent =
-            "Transcribing...";
-
-          try {
-
-            /*
-             * If the project already has a transcription
-             * bridge, use it.
-             */
-            if (
-              typeof window
-                .transcribeVoiceToComposer ===
-              "function"
-            ) {
-
-              const transcript =
-                await window
-                  .transcribeVoiceToComposer(
-                    recordedChunks,
-                    {
-                      language: "auto"
-                    }
-                  );
-
-              if (
-                typeof transcript ===
-                "string" &&
-                transcript.trim()
-              ) {
-
-                const existing =
-                  previousContent.trim();
-
-                input.value =
-                  existing
-                    ? `${existing} ${transcript}`.trim()
-                    : transcript.trim();
-
-                input.dispatchEvent(
-                  new Event(
-                    "input",
-                    {
-                      bubbles: true
-                    }
-                  )
-                );
-
-                input.focus();
-              }
-
-            } else {
-
-              /*
-               * Browser speech recognition fallback.
-               * This prevents the composer from pretending
-               * transcription exists when no bridge exists.
-               */
-              voiceStatus.textContent =
-                "Voice transcription is not connected yet.";
-            }
-
-          } catch (error) {
-
-            console.error(
-              "Theo Unified Composer transcription error:",
-              error
-            );
-
-            voiceStatus.textContent =
-              "Could not transcribe the recording.";
-          }
-
-          recording = false;
-          recordedChunks = [];
-          mediaRecorder = null;
-
-          voiceStatus.textContent = "";
-
-          renderAttachments();
-          resizeInput();
-          setComposerState();
-        };
-
-      mediaRecorder.start();
-
-      recording = true;
-
-      voiceStatus.textContent =
-        "Listening...";
-
-      setComposerState();
-
-    } catch (error) {
-
-      console.error(
-        "Theo Unified Composer microphone error:",
-        error
-      );
-
-      recording = false;
-      mediaRecorder = null;
-
-      voiceStatus.textContent =
-        "Microphone permission was not granted.";
-
-      setComposerState();
-    }
-  }
-
-  /* =======================================================
-     STOP RECORDING
-     ======================================================= */
-
-  function stopVoiceRecording() {
-
-    if (
-      !recording ||
-      !mediaRecorder
-    ) {
-      return;
-    }
-
-    if (
-      mediaRecorder.state !==
-      "inactive"
-    ) {
-      mediaRecorder.stop();
-    }
-  }
-
-  /* =======================================================
-     CANCEL RECORDING
-     ======================================================= */
-
-  function cancelVoiceRecording() {
-
-    if (mediaRecorder) {
-
-      try {
-
-        if (
-          mediaRecorder.state !==
-          "inactive"
-        ) {
-          mediaRecorder.stop();
-        }
-
-      } catch (_) {}
-    }
-
-    input.value =
-      previousContent;
-
-    selectedFiles.length = 0;
-
-    previousFiles.forEach(
-      file => {
-        selectedFiles.push(
-          file
-        );
-      }
-    );
-
-    recording = false;
-    recordedChunks = [];
-    mediaRecorder = null;
-
-    voiceStatus.textContent = "";
-
+    fileInput.value = "";
     renderAttachments();
-    resizeInput();
-    setComposerState();
-
-    input.focus();
-  }
-
-  /* =======================================================
-     VOICE BUTTONS
-     ======================================================= */
-
-  cleanVoiceStartButton.addEventListener(
-    "click",
-    startVoiceRecording
-  );
-
-  if (
-    cleanRecordVoiceButton
-  ) {
-    cleanRecordVoiceButton.addEventListener(
-      "click",
-      stopVoiceRecording
-    );
-  }
-
-  if (
-    cleanCancelVoiceButton
-  ) {
-    cleanCancelVoiceButton.addEventListener(
-      "click",
-      cancelVoiceRecording
-    );
-  }
-
-  /* =======================================================
-     AIRA PLACEHOLDER
-     ======================================================= */
-
-  cleanAiraButton.addEventListener(
-    "click",
-    () => {
-      voiceStatus.textContent = "";
-    }
-  );
-
-  /* =======================================================
-     INITIAL STATE
-     ======================================================= */
-
-  renderAttachments();
-  resizeInput();
-  setComposerState();
-
-  console.log(
-    "Theo Unified Composer V3 ready."
-  );
-
+  });
 })();
-

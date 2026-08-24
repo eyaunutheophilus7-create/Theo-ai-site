@@ -438,10 +438,7 @@ historyNewChatButton.addEventListener(
 async function sendMessageToTheo(message) {
   message = message.trim();
 
-  const attachments =
-    typeof window.getComposerAttachments === "function"
-      ? await window.getComposerAttachments()
-      : [];
+  const attachments = await getComposerAttachments();
 
   if (!message && attachments.length === 0) {
     return;
@@ -534,9 +531,7 @@ async function sendMessageToTheo(message) {
 
     await loadConversations();
 
-    if (Array.isArray(window.composerSelectedFiles)) {
-      window.composerSelectedFiles.length = 0;
-    }
+    composerSelectedFiles.length = 0;
 
     const attachmentArea =
       document.getElementById("composer-attachments");
